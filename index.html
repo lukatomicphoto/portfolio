@@ -1,446 +1,1315 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio - 6 Kolona</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700&display=swap" rel="stylesheet">
-    
+    <title>Luka Tomić</title>
+    <meta name="description" content="Portfolio fotografa — sport, love, event, fashion, experimental, studio.">
+    <meta name="theme-color" content="#050505">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@1,500&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        * {
+        /* ============================================================
+           TOKENS — sve vrednosti na jednom mestu
+        ============================================================ */
+        :root {
+            --black: #050505;
+            --white: #EDEDE9;
+            --muted: rgba(237, 237, 233, .55);
+            --accent: #C8A15A;
+
+            /* Krive — expo-out je kralj cinematic easinga */
+            --e-out: cubic-bezier(.16, 1, .3, 1);
+            --e-io: cubic-bezier(.77, 0, .18, 1);
+            --e-soft: cubic-bezier(.25, .46, .45, .94);
+
+            --ff-display: 'Anton', sans-serif;
+            --ff-ui: 'Montserrat', sans-serif;
+            --ff-serif: 'Cormorant Garamond', serif;
+        }
+
+        /* ============================================================
+           BAZA
+        ============================================================ */
+        html {
+            background: var(--black);
+            overflow-x: hidden;
+            overflow-y: auto;
+            scrollbar-gutter: stable;             /* nema horizontalnog "skoka" kad se pojavi scrollbar */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(237,237,233,.22) var(--black);
+        }
+        html.is-open { overflow-y: auto; }
+
+        body {
             margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            background: var(--black);
+            color: var(--white);
+            font-family: var(--ff-ui);
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            overflow: hidden;                     /* dok je zatvoreno — nema skrola */
+            -webkit-tap-highlight-color: transparent;
         }
+        html.is-open body { overflow: visible; }
 
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden; 
-            font-family: 'Montserrat', sans-serif;
-            background-color: #000;
-        }
+        h1, h2, p, figure, figcaption { margin: 0; padding: 0; }
+        button { font-family: inherit; }
+        img { background: #0d0d0d; }
 
-        html.is-open, body.is-open {
-            overflow: visible; 
-            height: auto; 
-        }
+        ::selection { background: var(--accent); color: var(--black); }
+        :focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 
-        .portfolio-container {
-            display: flex;
-            width: 100%;
-            height: 100vh;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--black); }
+        ::-webkit-scrollbar-thumb { background: rgba(237,237,233,.18); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(237,237,233,.35); }
 
-        html.is-open .portfolio-container {
-            height: auto;
-            min-height: 100vh;
-        }
+        .lucide { width: 14px; height: 14px; stroke-width: 1.5; }
 
-        .column {
-            flex: 1;
-            transition: flex 1.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in-out;
-            cursor: pointer;
-            overflow: hidden; 
-            display: flex;
-            flex-direction: column; 
-            min-height: 100vh;
-            position: relative;
+        /* ============================================================
+           LOADER — counter + curtain reveal
+        ============================================================ */
+        #loader {
+            position: fixed; inset: 0; z-index: 6000;
+            background: var(--black);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 1s var(--e-io) .1s;
         }
-
-        .column.active {
-            flex: 100%;
-            cursor: default;
-            overflow: visible; 
-        }
-
-        .column.hidden {
-            flex: 0;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* Osnova za fiksiranje slojeva */
-        .sticky-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-        }
-
-        .bg-layer {
-            z-index: 1;
-            overflow: hidden; 
-        }
-
-        /* Obezbjeđuje da tekst uvjek bude iznad svih slojeva, čak i pri hoveru */
-        .fg-layer {
-            z-index: 10; 
-        }
-
-        .column.active .sticky-layer {
-            position: sticky;
-            height: 100vh;
-        }
-
-        /* Trik koji sprječava da prednji sloj završi ispod pozadine kada postanu sticky */
-        .column.active .fg-layer {
-            margin-top: -100vh; 
-        }
-
-        .bg-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform-origin: center top; 
-            z-index: 0;
-            pointer-events: none;
-            transform: scale(1.02);
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-            will-change: transform;
-        }
-
-        .bg-image.parallax-active {
-            transition: none !important;
-        }
-
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            transition: background-color 0.6s ease-in-out;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .vignette {
-            position: absolute;
-            bottom: 0; left: 0; width: 50%; height: 100%; 
-            background: linear-gradient(to right, rgba(0, 0, 0, 0.8), transparent);
-            opacity: 0;
-            transition: opacity 0.6s ease-in-out;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        .vignette-active {
-            position: absolute;
-            bottom: 0; left: 0; width: 100%; height: 100%; 
-            background: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 35%, rgba(0, 0, 0, 0.2) 75%, transparent 100%);
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
-            z-index: 3;
-            pointer-events: none;
-        }
-
-        .column:not(.active):not(.hidden):hover {
-            flex: 2;
-        }
-        .column:not(.active):not(.hidden):hover .bg-image {
-            transform: scale(1.10); 
-        }
-        .column:not(.active):not(.hidden):hover .overlay {
-            background-color: rgba(0, 0, 0, 0);
-        }
-        .column:not(.active):not(.hidden):hover .vignette {
-            opacity: 1;
-        }
-        .column:not(.active):not(.hidden):hover .category-name {
-            opacity: 1;
-        }
-
-        .column.active .bg-image {
-            transform: scale(1.12) translateY(0); 
-        }
-        .column.active .overlay {
-            background-color: rgba(0, 0, 0, 0); 
-        }
-        .column.active .vignette {
-            opacity: 0; 
-        }
-        .column.active .vignette-active {
-            opacity: 1; 
-        }
-
-        .category-name {
-            position: absolute;
-            top: 60%; 
-            left: 40px; 
-            color: white;
-            font-size: 28px;
-            font-weight: 700;
+        #loader.out { transform: translate3d(0, -100%, 0); }
+        .ld-center { text-align: center; transition: opacity .45s ease, transform .45s var(--e-out); }
+        #loader.out .ld-center { opacity: 0; transform: translate3d(0, -24px, 0); }
+        .ld-brand {
+            font-family: var(--ff-display);
+            font-size: clamp(26px, 3.4vw, 46px);
+            letter-spacing: .12em;
             text-transform: uppercase;
-            white-space: nowrap;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            letter-spacing: 2px;
-            text-shadow: 0px 4px 15px rgba(0, 0, 0, 0.6);
-            opacity: 0;
-            transition: opacity 0.6s ease-in-out;
-            pointer-events: none;
         }
-        .column.active .category-name {
-            opacity: 1;
+        .ld-sub {
+            margin-top: 12px;
+            font-size: 9px; font-weight: 500;
+            letter-spacing: .5em; text-transform: uppercase; color: var(--muted);
+        }
+        .ld-bar {
+            width: 220px; height: 1px; margin: 26px auto 0;
+            background: rgba(237,237,233,.12); overflow: hidden;
+        }
+        .ld-bar i {
+            display: block; height: 100%;
+            background: var(--white);
+            transform: scaleX(0); transform-origin: left;
+        }
+        .ld-count {
+            position: absolute; right: 4vw; bottom: 3vh;
+            font-family: var(--ff-display);
+            font-size: clamp(88px, 15vw, 220px);
+            line-height: .78; letter-spacing: -.02em;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(237,237,233,.45);
+            transition: opacity .45s ease;
+        }
+        #loader.out .ld-count { opacity: 0; }
+
+        /* ============================================================
+           FILM GRAIN — tekstura preko celog sajta
+        ============================================================ */
+        .grain {
+            position: fixed; inset: -120px; z-index: 5000; pointer-events: none;
+            opacity: .055; mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+            animation: grainShift .9s steps(4) infinite;
+        }
+        @keyframes grainShift {
+            0%   { transform: translate(0, 0); }
+            25%  { transform: translate(-34px, 22px); }
+            50%  { transform: translate(24px, -28px); }
+            75%  { transform: translate(-18px, -12px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* ============================================================
+           INFO DUGME & POPUP
+        ============================================================ */
+        .info-wrapper {
+            position: fixed; top: 30px; right: 40px; z-index: 1200;
+        }
+        .info-btn {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(8,8,8,.35); border: 1px solid rgba(237,237,233,.3);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            cursor: pointer; position: relative; z-index: 2;
+            transition: background .4s ease, border-color .4s ease, transform .5s var(--e-out);
+        }
+        .info-btn::after {
+            content: '';
+            position: absolute; inset: 12px;
+            border-radius: 50%; background: var(--white);
+            transition: transform .4s ease;
+        }
+        .info-btn:hover { background: var(--white); border-color: var(--white); transform: scale(1.05); }
+        .info-btn:hover::after { background: var(--black); transform: scale(1.2); }
+
+        .info-popup {
+            position: absolute; top: 100%; right: 0; margin-top: 16px;
+            width: max-content; padding: 24px; border-radius: 6px;
+            background: rgba(8,8,8,.85); border: 1px solid rgba(237,237,233,.15);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            display: flex; flex-direction: column; gap: 8px; text-align: right;
+            opacity: 0; transform: translate3d(0, -12px, 0); visibility: hidden;
+            transition: opacity .4s ease .5s, transform .5s var(--e-out) .5s, visibility 0s linear .9s;
+        }
+        /* Nevidljivi most koji spaja dugme i popup da se ne bi gubio hover prilikom prelaska mišem */
+        .info-popup::before {
+            content: ''; position: absolute; top: -24px; left: 0; right: 0; height: 24px;
+        }
+        .info-wrapper:hover .info-popup { 
+            opacity: 1; transform: none; visibility: visible; 
+            transition: opacity .4s ease, transform .5s var(--e-out), visibility 0s; 
+        }
+        .ip-name {
+            font-size: 14px; font-weight: 600; letter-spacing: .15em; text-transform: uppercase;
+            color: var(--white); margin-bottom: 8px;
+        }
+        .ip-link {
+            font-size: 11px; font-weight: 400; letter-spacing: .08em;
+            color: rgba(237,237,233,.65); text-decoration: none;
+            transition: color .3s ease;
+        }
+        .ip-link:hover { color: var(--accent); }
+
+        /* ============================================================
+           TOPBAR / HINT / PROGRESS / CLOSE
+        ============================================================ */
+        .topbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1100;
+            display: flex; justify-content: space-between; align-items: baseline;
+            padding: 26px 40px;
+            font-size: 10px; font-weight: 500; letter-spacing: .32em; text-transform: uppercase;
+            mix-blend-mode: difference; color: var(--white); pointer-events: none;
+            opacity: 0; transform: translate3d(0, -16px, 0);
+            transition: opacity 1s ease 1s, transform 1s var(--e-out) 1s;
+        }
+        body.loaded .topbar { opacity: 1; transform: none; }
+        .brand { pointer-events: auto; cursor: pointer; background: none; border: none; color: inherit; padding: 0;
+                 font: inherit; letter-spacing: inherit; text-transform: inherit; }
+        .brand sup { font-size: 7px; letter-spacing: .2em; color: var(--accent); margin-left: 8px; mix-blend-mode: normal; }
+        .topbar .loc { font-weight: 300; }
+
+        .hint {
+            position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+            z-index: 1100; display: flex; flex-direction: column; align-items: center; gap: 12px;
+            font-size: 9px; font-weight: 500; letter-spacing: .45em; text-transform: uppercase;
+            color: rgba(237,237,233,.5); pointer-events: none;
+            opacity: 0; transition: opacity .9s ease 1.6s;
+        }
+        body.loaded .hint { opacity: 1; }
+        body.is-open .hint { opacity: 0 !important; transition-delay: 0s; }
+        .hint::after {
+            content: ''; width: 1px; height: 34px;
+            background: linear-gradient(to bottom, rgba(237,237,233,.6), transparent);
+            animation: hintLine 2.4s var(--e-soft) infinite;
+        }
+        @keyframes hintLine {
+            0%   { transform: scaleY(0); transform-origin: top; }
+            45%  { transform: scaleY(1); transform-origin: top; }
+            55%  { transform: scaleY(1); transform-origin: bottom; }
+            100% { transform: scaleY(0); transform-origin: bottom; }
+        }
+
+        .progress {
+            position: fixed; left: 0; bottom: 0; width: 100%; height: 2px; z-index: 1150;
+            pointer-events: none; opacity: 0; transition: opacity .7s ease;
+        }
+        body.is-open .progress { opacity: 1; }
+        .progress i {
+            display: block; height: 100%; width: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--white));
+            transform: scaleX(0); transform-origin: left;
         }
 
         .close-btn {
-            position: fixed;
-            top: 40px; 
-            left: -100px; 
-            z-index: 999;
-            color: white;
-            font-size: 32px;
-            font-weight: 300;
+            position: fixed; top: 30px; left: 40px; z-index: 1200;
+            display: flex; align-items: center; justify-content: center;
+            width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(8,8,8,.35); border: 1px solid rgba(237,237,233,.3);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            color: var(--white); font-size: 24px; font-weight: 300;
             cursor: pointer;
-            background: transparent;
-            border: none;
-            padding: 0;
-            opacity: 0;
-            text-shadow: 0px 2px 10px rgba(0, 0, 0, 0.5);
-            transition: left 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease;
+            opacity: 0; transform: translate3d(-26px, 0, 0); pointer-events: none;
+            transition: opacity .6s var(--e-soft), transform .7s var(--e-out),
+                        background .45s ease, color .45s ease, border-color .45s ease;
         }
-        .close-btn.visible {
-            left: 40px; 
-            opacity: 1;
-        }
+        .close-btn.visible { opacity: 1; transform: none; pointer-events: auto; }
+        .close-btn:hover { background: var(--white); color: var(--black); border-color: var(--white); }
+        body.lb-open .close-btn { opacity: 0 !important; pointer-events: none !important; }
 
-        .gallery {
-            display: flex;
-            opacity: 0;
-            visibility: hidden;
-            flex-wrap: wrap;
-            gap: 8px;
-            /* Simetrični padding: 120px i desno i lijevo */
-            padding: 40px 120px 40px 120px; 
-            background-color: transparent; 
-            width: 100%;
-            margin-top: -55vh; 
+        /* ============================================================
+           KOLONE — srce layouta
+        ============================================================ */
+        .portfolio-container {
+            display: flex; width: 100%;
+            height: 100vh; height: 100dvh;
+            background: var(--black);
+        }
+        html.is-open .portfolio-container { height: auto; min-height: 100vh; min-height: 100dvh; }
+
+        .column {
+            flex: 1 1 0%; min-width: 0;
             position: relative;
-            z-index: 5; 
+            display: flex; flex-direction: column;
+            min-height: 100vh; min-height: 100dvh;
+            overflow: hidden;
+            cursor: pointer;
+            contain: layout paint;
+            transition: flex-grow 1.35s var(--e-out) 0s,
+                        opacity .8s var(--e-soft) 0s,
+                        transform 1.15s var(--e-io) calc(var(--n, 0) * .08s);
+        }
+        body:not(.loaded) .column { transform: translate3d(0, 103%, 0); }
+
+        .column.active {
+            flex-grow: 40; cursor: default; overflow: visible;
+            transition: flex-grow 1.65s var(--e-out);
+        }
+        .column.hidden {
+            flex-grow: .0001; opacity: 0; pointer-events: none;
+            transition: flex-grow 1.35s var(--e-out), opacity .75s var(--e-soft);
+        }
+        @media (hover: hover) {
+            .column:not(.active):not(.hidden):hover {
+                flex-grow: 2.6;
+                transition: flex-grow 1.15s var(--e-out);
+            }
         }
 
-        .gallery.show {
+        /* ---------- sticky slojevi ---------- */
+        .sticky-layer {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100vh; height: 100dvh;
+            pointer-events: none;
+        }
+        .bg-layer {
+            z-index: 1; overflow: hidden;
+            /* JS parallax (--px/--py) + scroll-fix (--sy) zive na istom elementu, bez medjusobnog gazenja */
+            transform: scale(1.02) translate3d(var(--px, 0px), calc(var(--py, 0px) + var(--sy, 0px)), 0);
+        }
+        .fg-layer { z-index: 6; transform: translate3d(0, var(--sy, 0px), 0); }
+
+        .column.active .sticky-layer,
+        .column.is-closing .sticky-layer { position: sticky; height: 100vh; height: 100dvh; }
+        .column.active .fg-layer,
+        .column.is-closing .fg-layer { margin-top: -100vh; margin-top: -100dvh; }
+
+        /* ---------- pozadina: breathe (ken burns) + slika ---------- */
+        .bg-breathe { position: absolute; top: -3%; left: -3%; width: 106%; height: 106%; }
+        body.loaded:not(.is-open) .bg-breathe { animation: breathe 26s ease-in-out infinite alternate; }
+        html.is-open .column.active .bg-breathe { animation: none; transform: translate3d(0, var(--scp, 0px), 0); }
+        .column:nth-child(2) .bg-breathe { animation-duration: 31s !important; animation-delay: -6s; }
+        .column:nth-child(3) .bg-breathe { animation-duration: 24s !important; animation-delay: -13s; }
+        .column:nth-child(4) .bg-breathe { animation-duration: 34s !important; animation-delay: -3s; }
+        .column:nth-child(5) .bg-breathe { animation-duration: 28s !important; animation-delay: -9s; }
+        .column:nth-child(6) .bg-breathe { animation-duration: 37s !important; animation-delay: -16s; }
+        @keyframes breathe { from { transform: scale(1); } to { transform: scale(1.06); } }
+
+        .bg-image {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform-origin: center 35%;
+            transform: scale(1.03);
+            filter: saturate(.9) contrast(1.05) brightness(.92);
+            transition: transform 1.6s var(--e-out), filter 1.3s var(--e-soft);
+            pointer-events: none;
+        }
+        body:not(.loaded) .bg-image { transform: scale(1.18); }
+
+        .column:nth-child(1) .bg-image { object-position: center 30%; }
+        .column:nth-child(2) .bg-image { object-position: center 50%; }
+        .column:nth-child(3) .bg-image { object-position: center 42%; }
+        .column:nth-child(4) .bg-image { object-position: center 22%; }
+        .column:nth-child(5) .bg-image { object-position: center 55%; }
+        .column:nth-child(6) .bg-image { object-position: center 35%; }
+
+        @media (hover: hover) {
+            .column:not(.active):not(.hidden):hover .bg-image {
+                transform: scale(1.08);
+                filter: saturate(1.08) contrast(1.05) brightness(1);
+            }
+        }
+        .column.active .bg-image {
+            transform: scale(1.12);
+            filter: blur(7px) saturate(.85) brightness(.72);
+        }
+        .column.is-closing .bg-image {
+            transform: scale(1.03);
+            filter: saturate(.9) contrast(1.05) brightness(.92);
+        }
+
+        /* ---------- overlay & vinjete ---------- */
+        .overlay {
+            position: absolute; inset: 0; z-index: 1;
+            background: rgba(4,4,4,.42);
+            transition: background 1s var(--e-soft);
+            pointer-events: none;
+        }
+        @media (hover: hover) {
+            .column:not(.active):not(.hidden):hover .overlay { background: rgba(4,4,4,.1); }
+        }
+        .column.active .overlay { background: rgba(4,4,4,.5); }
+
+        .vignette {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 62%; z-index: 2;
+            background: linear-gradient(to top, rgba(0,0,0,.85), transparent);
+            opacity: 0; transform: translate3d(0, 40px, 0);
+            transition: opacity .8s var(--e-soft), transform 1.1s var(--e-out);
+            pointer-events: none;
+        }
+        @media (hover: hover) {
+            .column:not(.active):not(.hidden):hover .vignette { opacity: 1; transform: none; }
+        }
+
+        .vignette-active {
+            position: absolute; inset: 0; z-index: 3;
+            background: linear-gradient(to bottom,
+                rgba(0,0,0,.55) 0%, rgba(0,0,0,.15) 18%,
+                transparent 38%, transparent 78%, rgba(0,0,0,.85) 100%);
+            opacity: 0; transition: opacity 1.6s var(--e-soft);
+            pointer-events: none;
+        }
+        .column.active .vignette-active { opacity: 1; }
+
+        /* ---------- broj kolone ---------- */
+        .col-num {
+            position: absolute; top: 76px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px; font-weight: 500; letter-spacing: .35em;
+            color: rgba(237,237,233,.35);
+            transition: color .8s ease, opacity .8s ease;
+        }
+        @media (hover: hover) {
+            .column:not(.active):not(.hidden):hover .col-num { color: var(--accent); }
+        }
+        .column.active .col-num { opacity: 0; }
+
+        /* ---------- naslov (split letters) ---------- */
+        .title-group {
+            position: absolute; left: 50%; bottom: 104px;
+            transform: translate3d(-50%, 26px, 0);
+            text-align: center; opacity: 0;
+            transition: opacity .7s var(--e-soft), transform 1.25s var(--e-out);
+            will-change: transform;
+        }
+        @media (hover: hover) {
+            .column:not(.active):not(.hidden):hover .title-group { opacity: 1; transform: translate3d(-50%, 0, 0); }
+        }
+        .column.active .title-group {
             opacity: 1;
-            visibility: visible;
-            transition: opacity 0.6s ease-in-out, visibility 0.6s;
+            transform: translate3d(-50%, calc(-100vh + 232px), 0) scale(1.45);
+            transform: translate3d(-50%, calc(-100dvh + 232px), 0) scale(1.45);
+            transition: transform 1.65s var(--e-out), opacity .8s ease;
+        }
+        /* FIX: naslov se pri zatvaranju vraca na dno */
+        .column.is-closing .title-group {
+            opacity: 0;
+            transform: translate3d(-50%, 26px, 0) scale(1);
+            transition: opacity .5s ease, transform .9s var(--e-out);
+        }
+
+        .category-name {
+            font-family: var(--ff-display);
+            font-size: clamp(19px, 1.7vw, 28px);
+            letter-spacing: .14em; text-transform: uppercase;
+            white-space: nowrap; line-height: 1.1;
+            color: var(--white);
+            text-shadow: 0 2px 30px rgba(0,0,0,.4);
+            overflow: hidden; padding: .08em .05em;
+        }
+        .lt {
+            display: inline-block;
+            transform: translate3d(0, 120%, 0); opacity: 0;
+            transition: transform .85s var(--e-out) calc(var(--i) * .035s),
+                        opacity .4s ease calc(var(--i) * .035s);
+        }
+        @media (hover: hover) {
+            .column:not(.active):not(.hidden):hover .lt { transform: none; opacity: 1; }
+        }
+        .column.active .lt { transform: none; opacity: 1; }
+
+        .cn-sub {
+            margin-top: 16px;
+            font-size: 9px; font-weight: 600; letter-spacing: .44em; text-transform: uppercase;
+            color: var(--accent); white-space: nowrap;
+            opacity: 0; transform: translate3d(0, 14px, 0);
+            transition: opacity .7s ease .4s, transform .9s var(--e-out) .4s;
+        }
+        .column.active .cn-sub { opacity: 1; transform: none; }
+
+        /* ============================================================
+           GALERIJA
+        ============================================================ */
+        .gallery {
+            position: relative; z-index: 5;
+            width: 100%;
+            column-count: 3; column-gap: 10px;
+            margin-top: -98vh;
+            padding: 300px 9vw 12vh;
+            opacity: 0; visibility: hidden;
+            transform: translate3d(0, 140px, 0);
+            pointer-events: none;
+            transition: opacity .55s ease, transform .65s var(--e-out), visibility 0s linear .6s;
+        }
+        .gallery.show {
+            opacity: 1; visibility: visible;
+            transform: none; pointer-events: auto;
+            transition: opacity 1s var(--e-soft), transform 1.45s var(--e-out), visibility 0s;
         }
 
         .gallery-item {
-            flex-grow: 1; 
-            height: 35vh; 
-            position: relative;
+            width: 100%; margin: 0 0 10px;
+            break-inside: avoid;
+            position: relative; display: block;
+            opacity: 0; transform: translate3d(0, 64px, 0);
+            transition: opacity .95s var(--e-soft), transform 1.2s var(--e-out);
+            cursor: pointer;
         }
-        .gallery-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            border-radius: 2px;
+        .gallery-item.in { opacity: 1; transform: none; }
+
+        .gi-media { overflow: hidden; border-radius: 3px; background: #0d0d0d; }
+        .gi-media img {
+            display: block; width: 100%; height: auto;
+            transform: scale(1.03);
+            filter: saturate(.92) brightness(.96);
+            transition: transform 1.35s var(--e-out), filter 1s var(--e-soft);
         }
-        .gallery::after {
-            content: '';
-            flex-grow: 999;
+        .gallery-item:hover .gi-media img { transform: scale(1.09); filter: saturate(1.05) brightness(1.04); }
+
+        .gallery-item figcaption {
+            position: absolute; left: 0; right: 0; bottom: 0;
+            display: flex; justify-content: space-between; align-items: flex-end; gap: 12px;
+            padding: 48px 14px 12px;
+            background: linear-gradient(to top, rgba(0,0,0,.78), transparent);
+            border-radius: 0 0 3px 3px;
+            opacity: 0; transform: translate3d(0, 12px, 0);
+            transition: opacity .55s ease, transform .7s var(--e-out);
+            pointer-events: none;
+        }
+        .gallery-item:hover figcaption { opacity: 1; transform: none; }
+        .gi-cap { font-family: var(--ff-serif); font-style: italic; font-size: 17px; color: var(--white); }
+        .gi-num { font-size: 9px; font-weight: 600; letter-spacing: .3em; color: var(--accent); }
+        .gallery-item figcaption { display: none !important; }
+
+        .gallery-end {
+            display: none !important;
+            position: relative; z-index: 5;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+            padding: 5vh 20px 12vh;
+            pointer-events: none;
+        }
+        .column.active .gallery.show ~ .gallery-end { pointer-events: auto; }
+
+        .back-link {
+            display: flex; align-items: center; gap: 10px;
+            padding: 14px 26px; border-radius: 100px;
+            background: transparent; border: 1px solid rgba(237,237,233,.3);
+            color: var(--white);
+            font-size: 9px; font-weight: 600; letter-spacing: .32em; text-transform: uppercase;
+            cursor: pointer;
+            transition: background .45s ease, color .45s ease, border-color .45s ease, transform .5s var(--e-out);
+        }
+        .back-link:hover { background: var(--white); color: var(--black); border-color: var(--white); transform: translate3d(0, -3px, 0); }
+
+        .credits { font-size: 9px; font-weight: 300; letter-spacing: .3em; text-transform: uppercase; color: rgba(237,237,233,.35); }
+
+        /* ============================================================
+           LIGHTBOX
+        ============================================================ */
+        .lb {
+            position: fixed; inset: 0; z-index: 4000;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(3,3,3,.92);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            opacity: 0; visibility: hidden;
+            transition: opacity .55s ease, visibility 0s linear .55s;
+        }
+        .lb.show { opacity: 1; visibility: visible; transition: opacity .55s ease; }
+
+        .lb-stage {
+            position: relative; display: grid;
+            max-width: min(1250px, 90vw);
+            transform: scale(.96); opacity: .6;
+            transition: transform .8s var(--e-out), opacity .8s ease;
+        }
+        .lb.show .lb-stage { transform: none; opacity: 1; }
+        .lb-img {
+            grid-area: 1 / 1;
+            max-width: 100%; max-height: 76vh;
+            width: auto; height: auto; margin: 0 auto;
+            box-shadow: 0 40px 120px rgba(0,0,0,.65);
+            opacity: 0; transform: scale(.985);
+            transition: opacity .6s var(--e-soft), transform .9s var(--e-out);
+        }
+        .lb-img.cur { opacity: 1; transform: none; }
+
+        .lb-counter {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            font-size: 13px; font-weight: 500; letter-spacing: .35em; color: var(--muted);
+        }
+        .lb-counter b { color: var(--white); font-weight: 600; }
+        .lb-btn {
+            position: absolute; z-index: 2;
+            display: flex; align-items: center; justify-content: center;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: rgba(8,8,8,.35); border: 1px solid rgba(237,237,233,.3);
+            backdrop-filter: blur(8px);
+            color: var(--white); cursor: pointer;
+            transition: background .4s ease, color .4s ease, border-color .4s ease, transform .5s var(--e-out);
+        }
+        .lb-btn:hover { background: var(--white); color: var(--black); border-color: var(--white); }
+        .lb-prev { left: 30px; top: 50%; transform: translateY(-50%); }
+        .lb-next { right: 30px; top: 50%; transform: translateY(-50%); }
+        .lb-prev:hover { transform: translateY(-50%) translateX(-3px); }
+        .lb-next:hover { transform: translateY(-50%) translateX(3px); }
+        
+        .lb-close { 
+            top: 30px; left: 40px; 
+            width: 64px; height: 64px; 
+            font-size: 24px; font-weight: 300;
+        }
+        .lb-close:hover { transform: scale(1.05); }
+        .lb-btn .lucide { width: 18px; height: 18px; }
+
+        /* ============================================================
+           MOBILE
+        ============================================================ */
+        @media (max-width: 860px) {
+            .portfolio-container { flex-direction: column; }
+            .column { min-width: 0; }
+            .info-wrapper { top: 16px; right: 20px; }
+            .info-btn { width: 44px; height: 44px; }
+            .info-popup { padding: 18px; margin-top: 12px; }
+            .close-btn { top: 16px; left: 20px; width: 44px; height: 44px; font-size: 18px; padding: 0; }
+            .col-num { top: 60px; }
+            .title-group { bottom: 56px; }
+            .category-name { font-size: 19px; }
+            .column.active .title-group {
+                transform: translate3d(-50%, calc(-100vh + 150px), 0) scale(1.12);
+                transform: translate3d(-50%, calc(-100dvh + 150px), 0) scale(1.12);
+            }
+            .column.is-closing .title-group {
+                transform: translate3d(-50%, 26px, 0) scale(1);
+            }
+            .gallery { column-count: 2; column-gap: 6px; padding: 210px 5vw 12vh; }
+            .gallery-item { margin-bottom: 6px; }
+            .gallery-item figcaption { opacity: 1; transform: none; padding: 30px 10px 9px; }
+            .gi-cap { font-size: 13px; }
+            .lb-counter { left: 50%; bottom: 20px; }
+            .lb-close { left: 20px; top: 16px; width: 44px; height: 44px; font-size: 18px; }
+            .lb-prev { left: 12px; } .lb-next { right: 12px; }
+            .lb-btn { width: 44px; height: 44px; }
+        }
+
+        /* ============================================================
+           REDUCED MOTION — postovanje pristupacnosti
+        ============================================================ */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: .001s !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .25s !important;
+                transition-delay: 0s !important;
+            }
+            .grain { display: none; }
         }
     </style>
 </head>
 <body>
 
-    <div id="closeBtn" class="close-btn" onclick="closeGallery(event)">&#10094;</div>
-
-    <div class="portfolio-container">
-        
-        <div class="column" onclick="openGallery(this)">
-            <div class="sticky-layer bg-layer">
-                <img src="sport.webp" class="bg-image">
-                <div class="overlay"></div>
-                <div class="vignette"></div>
-                <div class="vignette-active"></div>
-            </div>
-
-            <div class="sticky-layer fg-layer">
-                <div class="category-name">SPORT</div>
-            </div>
-            
-            <div class="gallery">
-                <div class="gallery-item"><img src="1.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="2.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="3.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="4.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="5.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="6.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="3.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="1.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="5.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="4.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="5.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="6.jpg" loading="lazy"></div>
-                <div class="gallery-item"><img src="3.jpg" loading="lazy"></div>
-            </div>
+    <!-- LOADER -->
+    <div id="loader" aria-hidden="true">
+        <div class="ld-center">
+            <div class="ld-brand">Luka Tomić</div>
+            <div class="ld-sub">portfolio</div>
+            <div class="ld-bar"><i></i></div>
         </div>
-        
-        <div class="column" onclick="openGallery(this)">
-            <div class="sticky-layer bg-layer">
-                <img src="love.webp" class="bg-image">
-                <div class="overlay"></div>
-                <div class="vignette"></div>
-                <div class="vignette-active"></div>
-            </div>
-            <div class="sticky-layer fg-layer">
-                <div class="category-name">LOVE</div>
-            </div>
-            <div class="gallery"></div>
-        </div>
-        
-        <div class="column" onclick="openGallery(this)">
-            <div class="sticky-layer bg-layer">
-                <img src="event.webp" class="bg-image">
-                <div class="overlay"></div>
-                <div class="vignette"></div>
-                <div class="vignette-active"></div>
-            </div>
-            <div class="sticky-layer fg-layer">
-                <div class="category-name">EVENT</div>
-            </div>
-            <div class="gallery"></div>
-        </div>
-        
-        <div class="column" onclick="openGallery(this)">
-            <div class="sticky-layer bg-layer">
-                <img src="fashion.webp" class="bg-image">
-                <div class="overlay"></div>
-                <div class="vignette"></div>
-                <div class="vignette-active"></div>
-            </div>
-            <div class="sticky-layer fg-layer">
-                <div class="category-name">FASHION</div>
-            </div>
-            <div class="gallery"></div>
-        </div>
-        
-        <div class="column" onclick="openGallery(this)">
-            <div class="sticky-layer bg-layer">
-                <img src="exp.webp" class="bg-image">
-                <div class="overlay"></div>
-                <div class="vignette"></div>
-                <div class="vignette-active"></div>
-            </div>
-            <div class="sticky-layer fg-layer">
-                <div class="category-name">EXPERIMENTAL</div>
-            </div>
-            <div class="gallery"></div>
-        </div>
-        
-        <div class="column" onclick="openGallery(this)">
-            <div class="sticky-layer bg-layer">
-                <img src="studio.webp" class="bg-image">
-                <div class="overlay"></div>
-                <div class="vignette"></div>
-                <div class="vignette-active"></div>
-            </div>
-            <div class="sticky-layer fg-layer">
-                <div class="category-name">STUDIO</div>
-            </div>
-            <div class="gallery"></div>
-        </div>
-
+        <div class="ld-count">000</div>
     </div>
 
-    <script>
-        // Povećana brzina paralaksa na savršenih 0.06
-        let ticking = false;
-        window.addEventListener('scroll', () => {
-            if (!document.documentElement.classList.contains('is-open')) return;
+    <!-- TEKSTURE -->
+    <div class="grain" aria-hidden="true"></div>
+
+    <!-- INFO DUGME & POPUP -->
+    <div class="info-wrapper">
+        <button class="info-btn" aria-label="Informacije" aria-haspopup="dialog" aria-expanded="false"></button>
+        <div class="info-popup" role="dialog" aria-label="Kontakt informacije">
+            <div class="ip-name">Luka Tomić</div>
+            <a href="https://instagram.com/lukinprofil" target="_blank" class="ip-link">@lukinprofil</a>
+            <a href="mailto:lukatomicphoto@gmail.com" class="ip-link">lukatomicphoto@gmail.com</a>
+            <a href="tel:+38763676516" class="ip-link">+387 63 676 516</a>
+        </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress" aria-hidden="true"><i></i></div>
+
+    <!-- CLOSE -->
+    <button id="closeBtn" class="close-btn" aria-label="Zatvori galeriju">
+        &lt;
+    </button>
+
+    <!-- LIGHTBOX -->
+    <div class="lb" id="lightbox" role="dialog" aria-modal="true" aria-label="Pregled fotografije" aria-hidden="true">
+        <button class="lb-btn lb-close" aria-label="Zatvori pregled">&lt;</button>
+        <button class="lb-btn lb-prev" aria-label="Prethodna fotografija"><i data-lucide="arrow-left"></i></button>
+        <div class="lb-stage">
+            <img class="lb-img" alt="">
+            <img class="lb-img" alt="">
+        </div>
+        <button class="lb-btn lb-next" aria-label="Sledeća fotografija"><i data-lucide="arrow-right"></i></button>
+        <div class="lb-counter"><b class="lb-cur">01</b> / <span class="lb-total">07</span></div>
+    </div>
+
+    <main class="portfolio-container" id="portfolio">
+
+        <!-- 01 SPORT -->
+        <section class="column" data-tag="Pokret / Adrenalin" role="button" tabindex="0" aria-expanded="false" aria-label="Otvori kategoriju Sport" data-cursor="Otvori">
+            <div class="sticky-layer bg-layer">
+                <div class="bg-breathe"><img class="bg-image" src="sport.webp" alt="Fudbaler u kiši pod reflektorima" fetchpriority="high"></div>
+                <div class="overlay"></div><div class="vignette"></div><div class="vignette-active"></div>
+            </div>
+            <div class="sticky-layer fg-layer">
+                <span class="col-num">01</span>
+                <div class="title-group">
+                    <h2 class="category-name" data-name="SPORT">SPORT</h2>
+                    
+                </div>
+            </div>
+            <div class="gallery">
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/34609641/pexels-photo-34609641.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/34609641/pexels-photo-34609641.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Dim nad terenom" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Dim nad terenom</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/35120116/pexels-photo-35120116.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/35120116/pexels-photo-35120116.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Let iznad rampe" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Let iznad rampe</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/14223968/pexels-photo-14223968.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/14223968/pexels-photo-14223968.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Stoni tenis u ponoć" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Stoni tenis u ponoć</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/34609644/pexels-photo-34609644.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/34609644/pexels-photo-34609644.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Neon derbi" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Neon derbi</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/32758901/pexels-photo-32758901.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/32758901/pexels-photo-32758901.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Ulična košarka, 23:40" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Ulična košarka, 23:40</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/36088124/pexels-photo-36088124.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/36088124/pexels-photo-36088124.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Tišina pre meča" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Tišina pre meča</span></figcaption>
+                </figure>
+            </div>
             
-            if (!ticking) {
-                window.requestAnimationFrame(() => {
-                    const activeImg = document.querySelector('.column.active .bg-image');
-                    if (activeImg) {
-                        const scrollY = window.scrollY || document.documentElement.scrollTop;
-                        activeImg.style.transform = `scale(1.12) translateY(${scrollY * -0.06}px)`;
-                    }
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        });
+        </section>
 
-        function openGallery(selectedColumn) {
-            if (selectedColumn.classList.contains('active')) return;
+        <!-- 02 LOVE -->
+        <section class="column" data-tag="Priče o dvoje" role="button" tabindex="0" aria-expanded="false" aria-label="Otvori kategoriju Love" data-cursor="Otvori">
+            <div class="sticky-layer bg-layer">
+                <div class="bg-breathe"><img class="bg-image" src="love.webp" alt="Zagrljaj na granici dana" fetchpriority="high"></div>
+                <div class="overlay"></div><div class="vignette"></div><div class="vignette-active"></div>
+            </div>
+            <div class="sticky-layer fg-layer">
+                <span class="col-num">02</span>
+                <div class="title-group">
+                    <h2 class="category-name" data-name="LOVE">LOVE</h2>
+                    
+                </div>
+            </div>
+            <div class="gallery">
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/34172822/pexels-photo-34172822.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/34172822/pexels-photo-34172822.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Prvi pogled" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Prvi pogled</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/38823745/pexels-photo-38823745.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/38823745/pexels-photo-38823745.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Svetlost fenjera" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Svetlost fenjera</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/6198375/pexels-photo-6198375.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/6198375/pexels-photo-6198375.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Tiha soba" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Tiha soba</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/36513942/pexels-photo-36513942.png?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/36513942/pexels-photo-36513942.png?auto=compress&cs=tinysrgb&w=1400" alt="Crno-belo obećanje" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Crno-belo obećanje</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/6198792/pexels-photo-6198792.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/6198792/pexels-photo-6198792.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Na krovu grada" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Na krovu grada</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/35240174/pexels-photo-35240174.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/35240174/pexels-photo-35240174.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Iza vela" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Iza vela</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/34172824/pexels-photo-34172824.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/34172824/pexels-photo-34172824.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Noćna šetnja" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Noćna šetnja</span></figcaption>
+                </figure>
+            </div>
+            
+        </section>
 
-            window.scrollTo(0, 0);
+        <!-- 03 EVENT -->
+        <section class="column" data-tag="Energija publike" role="button" tabindex="0" aria-expanded="false" aria-label="Otvori kategoriju Event" data-cursor="Otvori">
+            <div class="sticky-layer bg-layer">
+                <div class="bg-breathe"><img class="bg-image" src="event.webp" alt="Publika na koncertu" fetchpriority="high"></div>
+                <div class="overlay"></div><div class="vignette"></div><div class="vignette-active"></div>
+            </div>
+            <div class="sticky-layer fg-layer">
+                <span class="col-num">03</span>
+                <div class="title-group">
+                    <h2 class="category-name" data-name="EVENT">EVENT</h2>
+                    
+                </div>
+            </div>
+            <div class="gallery">
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/30215324/pexels-photo-30215324.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/30215324/pexels-photo-30215324.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Dim i strobo" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Dim i strobo</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/17644381/pexels-photo-17644381.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/17644381/pexels-photo-17644381.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Crno-beli hor" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Crno-beli hor</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/36675302/pexels-photo-36675302.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/36675302/pexels-photo-36675302.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Prvi red" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Prvi red</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/14870726/pexels-photo-14870726.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/14870726/pexels-photo-14870726.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Glavna bina" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Glavna bina</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/30497160/pexels-photo-30497160.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/30497160/pexels-photo-30497160.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Open air, 22:15" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Open air, 22:15</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/17644378/pexels-photo-17644378.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/17644378/pexels-photo-17644378.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Poslednja pesma" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Poslednja pesma</span></figcaption>
+                </figure>
+            </div>
+            
+        </section>
 
-            document.querySelectorAll('.column').forEach(col => {
-                if (col !== selectedColumn) {
-                    col.classList.remove('active');
-                    col.classList.add('hidden');
-                }
+        <!-- 04 FASHION -->
+        <section class="column" data-tag="Editorijal" role="button" tabindex="0" aria-expanded="false" aria-label="Otvori kategoriju Fashion" data-cursor="Otvori">
+            <div class="sticky-layer bg-layer">
+                <div class="bg-breathe"><img class="bg-image" src="fashion.webp" alt="Editorijal u crvenom svetlu" fetchpriority="high"></div>
+                <div class="overlay"></div><div class="vignette"></div><div class="vignette-active"></div>
+            </div>
+            <div class="sticky-layer fg-layer">
+                <span class="col-num">04</span>
+                <div class="title-group">
+                    <h2 class="category-name" data-name="FASHION">FASHION</h2>
+                    
+                </div>
+            </div>
+            <div class="gallery">
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/28863302/pexels-photo-28863302.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/28863302/pexels-photo-28863302.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Senka i saten" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Senka i saten</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/23911182/pexels-photo-23911182.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/23911182/pexels-photo-23911182.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Spot" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Spot</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/17386258/pexels-photo-17386258.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/17386258/pexels-photo-17386258.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Crveni filter" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Crveni filter</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/14999136/pexels-photo-14999136.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/14999136/pexels-photo-14999136.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Studijska linija" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Studijska linija</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/6833757/pexels-photo-6833757.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/6833757/pexels-photo-6833757.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Šljokice" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Šljokice</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/20894443/pexels-photo-20894443.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/20894443/pexels-photo-20894443.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Koža, ponoć" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Koža, ponoć</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/33681519/pexels-photo-33681519.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/33681519/pexels-photo-33681519.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Zeleno / crveno" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Zeleno / crveno</span></figcaption>
+                </figure>
+            </div>
+            
+        </section>
+
+        <!-- 05 EXPERIMENTAL -->
+        <section class="column" data-tag="Igra forme" role="button" tabindex="0" aria-expanded="false" aria-label="Otvori kategoriju Experimental" data-cursor="Otvori">
+            <div class="sticky-layer bg-layer">
+                <div class="bg-breathe"><img class="bg-image" src="exp.webp" alt="Neonski tragovi svetla" fetchpriority="high"></div>
+                <div class="overlay"></div><div class="vignette"></div><div class="vignette-active"></div>
+            </div>
+            <div class="sticky-layer fg-layer">
+                <span class="col-num">05</span>
+                <div class="title-group">
+                    <h2 class="category-name" data-name="EXPERIMENTAL">EXPERIMENTAL</h2>
+                    
+                </div>
+            </div>
+            <div class="gallery">
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/14269655/pexels-photo-14269655.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/14269655/pexels-photo-14269655.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Frekvencija 03" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Frekvencija 03</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/5687389/pexels-photo-5687389.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/5687389/pexels-photo-5687389.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Bokeh linije" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Bokeh linije</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/14524097/pexels-photo-14524097.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/14524097/pexels-photo-14524097.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Duga ekspozicija" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Duga ekspozicija</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/17327110/pexels-photo-17327110.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/17327110/pexels-photo-17327110.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Spektar u pokretu" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Spektar u pokretu</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/14209307/pexels-photo-14209307.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/14209307/pexels-photo-14209307.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Tačka i linija" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Tačka i linija</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/14064541/pexels-photo-14064541.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/14064541/pexels-photo-14064541.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Light painting no.7" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Light painting no.7</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/7065484/pexels-photo-7065484.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/7065484/pexels-photo-7065484.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Tragovi" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Tragovi</span></figcaption>
+                </figure>
+            </div>
+            
+        </section>
+
+        <!-- 06 STUDIO -->
+        <section class="column" data-tag="Portret / Studija" role="button" tabindex="0" aria-expanded="false" aria-label="Otvori kategoriju Studio" data-cursor="Otvori">
+            <div class="sticky-layer bg-layer">
+                <div class="bg-breathe"><img class="bg-image" src="studio.webp" alt="Crno-beli portret sa šeširom" fetchpriority="high"></div>
+                <div class="overlay"></div><div class="vignette"></div><div class="vignette-active"></div>
+            </div>
+            <div class="sticky-layer fg-layer">
+                <span class="col-num">06</span>
+                <div class="title-group">
+                    <h2 class="category-name" data-name="STUDIO">STUDIO</h2>
+                    
+                </div>
+            </div>
+            <div class="gallery">
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/7699976/pexels-photo-7699976.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/7699976/pexels-photo-7699976.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Pokret u portretu" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Pokret u portretu</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/18390130/pexels-photo-18390130.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/18390130/pexels-photo-18390130.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Razmišljanje" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Razmišljanje</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/10500054/pexels-photo-10500054.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/10500054/pexels-photo-10500054.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Profil" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Profil</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/30197430/pexels-photo-30197430.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/30197430/pexels-photo-30197430.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Meka svetlost" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Meka svetlost</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/6081456/pexels-photo-6081456.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/6081456/pexels-photo-6081456.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Iz profila" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Iz profila</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/14180800/pexels-photo-14180800.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/14180800/pexels-photo-14180800.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Kontemplacija" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Kontemplacija</span></figcaption>
+                </figure>
+                <figure class="gallery-item" data-cursor="Pogledaj" tabindex="0" role="button" aria-label="Uvećaj fotografiju">
+                    <div class="gi-media"><img src="https://images.pexels.com/photos/18529581/pexels-photo-18529581.jpeg?auto=compress&cs=tinysrgb&w=800" data-full="https://images.pexels.com/photos/18529581/pexels-photo-18529581.jpeg?auto=compress&cs=tinysrgb&w=1400" alt="Studija 12" loading="lazy" decoding="async"></div>
+                    <figcaption><span class="gi-cap">Studija 12</span></figcaption>
+                </figure>
+            </div>
+            
+        </section>
+
+    </main>
+
+    <script>
+    (() => {
+        'use strict';
+
+        /* ============================================================
+           CONFIG & HELPERS
+        ============================================================ */
+        const $  = (s, c = document) => c.querySelector(s);
+        const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+
+        const CFG = {
+            openMs: 1750,        // trajanje flex otvaranja (mora >= CSS 1.65s)
+            galleryDelay: 620,   // kada galerija pocinje da ulazi
+            minLoad: 1500,       // minimalno trajanje loadera (cinematic)
+            maxLoad: 9000        // fallback ako neka slika zapne
+        };
+
+        const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const FINE    = matchMedia('(pointer: fine)').matches;
+        const pad     = n => String(n).padStart(2, '0');
+        const easeInOutQuart = t => t < .5 ? 8*t*t*t*t : 1 - Math.pow(-2*t + 2, 4) / 2;
+
+        const html = document.documentElement, body = document.body;
+        const container  = $('#portfolio');
+        const cols       = $$('.column');
+        const closeBtn   = $('#closeBtn');
+        const progressBar = $('.progress i');
+        const loader     = $('#loader');
+
+        let mode = 'idle';           // idle | opening | open | closing
+        let activeCol = null;
+        let openTimeout = null;
+
+        /* Ceka kraj flex-grow tranzicije, uz timeout fallback (setTimeout jedini nije pouzdan) */
+        function afterTransition(el, ms, cb) {
+            let done = false;
+            const fin = () => { if (done) return; done = true; el.removeEventListener('transitionend', onEnd); cb(); };
+            const onEnd = e => { if (e.target === el && e.propertyName === 'flex-grow') fin(); };
+            el.addEventListener('transitionend', onEnd);
+            setTimeout(fin, ms + 120);
+        }
+
+        /* ============================================================
+           BUILD — slova naslova, brojevi, meta podaci, eventi
+        ============================================================ */
+        cols.forEach((col, i) => {
+            col.style.setProperty('--n', i);
+
+            const nameEl = $('.category-name', col);
+            const text = nameEl.dataset.name;
+            nameEl.textContent = '';
+            [...text].forEach((ch, j) => {
+                const s = document.createElement('span');
+                s.className = 'lt';
+                s.style.setProperty('--i', j);
+                s.textContent = ch === ' ' ? '\u00A0' : ch;
+                nameEl.appendChild(s);
             });
 
-            selectedColumn.classList.remove('hidden');
-            selectedColumn.classList.add('active');
-            
-            document.body.classList.add('is-open');
-            document.documentElement.classList.add('is-open');
-            
-            document.getElementById('closeBtn').classList.add('visible');
+            const items = $$('.gallery-item', col);
+            $('.col-num', col).textContent = pad(i + 1);
 
-            const activeImg = selectedColumn.querySelector('.bg-image');
-            if(activeImg) activeImg.style.transform = 'scale(1.12) translateY(0)';
+            items.forEach((it, j) => {
+                it.addEventListener('click', e => { e.stopPropagation(); openLightbox(col, j); });
+                it.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openLightbox(col, j); }
+                });
+            });
 
-            setTimeout(() => {
-                const gallery = selectedColumn.querySelector('.gallery');
-                if (gallery) gallery.classList.add('show');
-                
-                if(activeImg) activeImg.classList.add('parallax-active');
-            }, 600); 
-        }
+            col.addEventListener('click', () => { if (mode === 'idle') openGallery(col); });
+            col.addEventListener('keydown', e => {
+                if ((e.key === 'Enter' || e.key === ' ') && mode === 'idle') { e.preventDefault(); openGallery(col); }
+            });
+        });
 
-        function closeGallery(event) {
-            event.stopPropagation();
-            
-            const activeCol = document.querySelector('.column.active');
-            if (!activeCol) return;
+        closeBtn.addEventListener('click', closeGallery);
 
-            document.getElementById('closeBtn').classList.remove('visible');
+        /* ============================================================
+           LOADER — prati realno ucitavanje hero slika
+        ============================================================ */
+        const heroImgs = $$('.bg-image');
+        const total = heroImgs.length;
+        let loaded = 0, target = 0, cur = 0, finished = false;
+        const t0 = performance.now();
+        const barEl = $('.ld-bar i'), countEl = $('.ld-count');
 
-            const gallery = activeCol.querySelector('.gallery');
-            if (gallery) {
-                // Galerija se glatko gasi pune 0.8 sekunde tokom skrolanja naviše
-                gallery.style.transition = 'opacity 0.8s ease-in-out, visibility 0.8s';
-                gallery.classList.remove('show');
+        heroImgs.forEach(im => {
+            const p = im.complete ? Promise.resolve()
+                : (im.decode ? im.decode().catch(() => {}) : new Promise(r => { im.onload = im.onerror = r; }));
+            Promise.resolve(p).then(() => { loaded++; target = loaded / total; });
+        });
+
+        (function loaderTick() {
+            if (finished) return;
+            const elapsed = performance.now() - t0;
+            if (elapsed > CFG.maxLoad) target = 1;              // fallback
+            cur += (target - cur) * 0.07;
+            const pct = Math.min(1, cur);
+            barEl.style.transform = `scaleX(${pct})`;
+            countEl.textContent = String(Math.round(pct * 100)).padStart(3, '0');
+
+            if (pct > 0.995 && target >= 1 && elapsed > CFG.minLoad) {
+                finished = true;
+                barEl.style.transform = 'scaleX(1)';
+                countEl.textContent = '100';
+                loader.classList.add('out');
+                body.classList.add('loaded');
+                setTimeout(() => loader.remove(), 1400);
+                return;
+            }
+            requestAnimationFrame(loaderTick);
+        })();
+
+        /* ============================================================
+           REVEAL GALERIJE — IntersectionObserver + stagger
+        ============================================================ */
+        const io = new IntersectionObserver(entries => {
+            const fresh = entries.filter(e => e.isIntersecting && !e.target.classList.contains('in'));
+            if (!fresh.length) return;
+            fresh.forEach((e, k) => {
+                e.target.style.transitionDelay = (k * 85) + 'ms';
+                e.target.classList.add('in');
+                io.unobserve(e.target);
+                setTimeout(() => { e.target.style.transitionDelay = ''; }, 1400);
+            });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+
+        /* ============================================================
+           GLOBALNI rAF LOOP — parallax, progress, scroll-parallax
+        ============================================================ */
+        let parCol = null, tpx = 0, tpy = 0, cpx = 0, cpy = 0;
+
+        /* parallax targeti samo u idle rezimu, samo za kolonu pod mishom */
+        container.addEventListener('pointermove', e => {
+            if (mode !== 'idle' || REDUCED || !FINE) return;
+            const col = e.target.closest('.column');
+            if (col !== parCol) {
+                if (parCol) { parCol.style.setProperty('--px', '0px'); parCol.style.setProperty('--py', '0px'); }
+                parCol = col; tpx = tpy = 0;
+                if (col) { cpx = 0; cpy = 0; }
+                return;
+            }
+            if (!col) return;
+            tpx = (e.clientX / innerWidth  - .5) * 14;
+            tpy = (e.clientY / innerHeight - .5) * 10;
+        }, { passive: true });
+        container.addEventListener('pointerleave', () => { tpx = 0; tpy = 0; });
+
+        (function tick() {
+            /* parallax pozadine */
+            if (parCol && mode === 'idle') {
+                cpx += (tpx - cpx) * .06; cpy += (tpy - cpy) * .06;
+                parCol.style.setProperty('--px', cpx.toFixed(2) + 'px');
+                parCol.style.setProperty('--py', cpy.toFixed(2) + 'px');
             }
 
-            // Stranica započinje svoj prirodni smooth skrol
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            // Sklapanje kolona starta tačno kad se skrol smiri
-            setTimeout(() => {
-                const activeImg = activeCol.querySelector('.bg-image');
-                if (activeImg) {
-                    activeImg.classList.remove('parallax-active');
-                    activeImg.style.transform = ''; 
+            /* scroll progress + suptilan parallax aktivne pozadine */
+            if (mode === 'open' || mode === 'closing') {
+                const max = html.scrollHeight - innerHeight;
+                const sy = scrollY;
+                progressBar.style.transform = `scaleX(${max > 0 ? Math.min(1, sy / max) : 0})`;
+                if (activeCol && mode === 'open' && !REDUCED) {
+                    activeCol.style.setProperty('--scp', (sy * -0.1).toFixed(1) + 'px');
                 }
+            }
+            requestAnimationFrame(tick);
+        })();
 
-                document.querySelectorAll('.column').forEach(col => {
-                    col.classList.remove('active', 'hidden');
-                });
-                
-                document.body.classList.remove('is-open');
-                document.documentElement.classList.remove('is-open');
-                
-                // Reset stylinga galerije u pozadini
-                setTimeout(() => {
-                    if (gallery) gallery.style.transition = '';
-                }, 800);
+        /* ============================================================
+           OPEN
+        ============================================================ */
+        function openGallery(col) {
+            if (mode !== 'idle' || col === activeCol) return;
+            mode = 'opening';
+            activeCol = col;
+            col.setAttribute('aria-expanded', 'true');
 
-            }, 600); 
+            scrollTo(0, 0);
+
+            const others = cols.filter(c => c !== col);
+            const gallery = $('.gallery', col);
+            const vw = document.documentElement.clientWidth;
+
+            /* 1) Zamrzni fizicke sirine ostalih kolona + galerije
+                  => nema "nasilnog" reskaliranja slika i re-flow-a 30+ thumbs */
+            others.forEach(c => $$('.sticky-layer', c).forEach(l => l.style.width = c.offsetWidth + 'px'));
+            gallery.style.width = vw + 'px';
+            gallery.style.maxWidth = 'none';
+
+            /* prekini parallax */
+            if (parCol) { parCol = null; }
+            col.style.setProperty('--px', '0px');
+            col.style.setProperty('--py', '0px');
+            tpx = tpy = cpx = cpy = 0;
+
+            /* 2) force reflow pa klase — transition krece iz stabilnog stanja */
+            void col.offsetWidth;
+            others.forEach(c => { c.classList.remove('active'); c.classList.add('hidden'); });
+            col.classList.remove('hidden');
+            col.classList.add('active');
+            html.classList.add('is-open');
+            closeBtn.classList.add('visible');
+
+            /* 3) galerija ulazi malo kasnije — "overlap" tehnika iz montaze */
+            clearTimeout(openTimeout);
+            openTimeout = setTimeout(() => {
+                if (mode !== 'opening' && mode !== 'open') return;
+                gallery.classList.add('show');
+                $$('.gallery-item', col).forEach(it => io.observe(it));
+            }, REDUCED ? 60 : CFG.galleryDelay);
+
+            /* 4) otpusti zamrznuto tek kad se flex skroz smiri */
+            afterTransition(col, CFG.openMs, () => {
+                others.forEach(c => $$('.sticky-layer', c).forEach(l => l.style.width = ''));
+                gallery.style.width = '';
+                gallery.style.maxWidth = '';
+                if (mode === 'opening') mode = 'open';
+            });
         }
-    </script>
 
+        /* ============================================================
+           CLOSE — sinkronizovan scroll + kolapss
+        ============================================================ */
+        function closeGallery() {
+            if (mode !== 'open' || !activeCol) return;
+            mode = 'closing';
+
+            const col = activeCol;
+            col.setAttribute('aria-expanded', 'false');
+            closeBtn.classList.remove('visible');
+            clearTimeout(openTimeout);
+
+            const gallery = $('.gallery', col);
+            gallery.style.width = document.documentElement.clientWidth + 'px';
+            gallery.style.maxWidth = 'none';
+            gallery.classList.remove('show');          // fade-out krece ODMAH, paralelno sa scroll-om
+            $$('.gallery-item', col).forEach(it => {
+                io.unobserve(it);
+                it.classList.remove('in');
+            });
+
+            col.classList.add('is-closing');
+            /* zakljucaj skrol dok traje sinhronizovana animacija zatvaranja —
+               inace korisnicki wheel "sece" easing i pravi jank */
+            html.style.overflow = 'hidden';
+
+            requestAnimationFrame(() => {
+                /* sve kolone se vracaju istovremeno — overlap efekat */
+                col.classList.remove('active');
+                cols.forEach(c => {
+                    c.classList.remove('hidden');
+                    $$('.sticky-layer', c).forEach(l => l.style.width = '');
+                });
+
+                const startScroll = scrollY;
+                const dur = startScroll < 60 ? 700 : Math.min(1100, Math.max(680, startScroll * 0.32));
+                const sT = performance.now();
+
+                (function step(now) {
+                    const p = Math.min(1, (now - sT) / dur);
+                    const y = startScroll * (1 - easeInOutQuart(p));
+                    if (startScroll > 0) scrollTo(0, y);
+
+                    /* STICKY FIX (tvoj trik, sad preko CSS varijable --sy):
+                       slojevi aktivne kolone ostaju "zakucani" za viewport dok scroll traje */
+                    col.style.setProperty('--sy', y.toFixed(1) + 'px');
+
+                    if (p < 1) { requestAnimationFrame(step); return; }
+
+                    html.style.overflow = '';
+                    html.classList.remove('is-open');
+                    col.classList.remove('is-closing');
+                    col.style.setProperty('--sy', '0px');
+                    col.style.removeProperty('--scp');
+                    gallery.style.width = '';
+                    gallery.style.maxWidth = '';
+                    progressBar.style.transform = 'scaleX(0)';
+                    mode = 'idle';
+                    activeCol = null;
+                })(performance.now());
+            });
+        }
+
+        /* ============================================================
+           LIGHTBOX — A/B crossfade bufferi, preload suseda, swipe
+        ============================================================ */
+        const lb = $('#lightbox');
+        const lbImgs = $$('.lb-img', lb);
+        const lbCur = $('.lb-cur', lb), lbTotal = $('.lb-total', lb);
+        let lbOpen = false, lbBuf = 0, lbIdx = 0, lbItems = [];
+
+        function openLightbox(col, idx) {
+            if (mode !== 'open' || lbOpen) return;
+            lbOpen = true;
+            lbItems = $$('.gallery-item img', col);
+            lbTotal.textContent = pad(lbItems.length);
+            lb.classList.add('show');
+            lb.setAttribute('aria-hidden', 'false');
+            body.classList.add('lb-open');
+            html.classList.add('scroll-lock');
+            html.style.overflow = 'hidden';
+            lbImgs.forEach(im => im.classList.remove('cur'));
+            showLB(idx);
+        }
+
+        function showLB(idx) {
+            const n = lbItems.length;
+            lbIdx = ((idx % n) + n) % n;
+            const srcImg = lbItems[lbIdx];
+            const buf = lbImgs[lbBuf];
+            const prev = lbImgs[1 - lbBuf];
+            lbCur.textContent = pad(lbIdx + 1);
+            buf.onload = () => { buf.classList.add('cur'); prev.classList.remove('cur'); };
+            buf.src = srcImg.dataset.full || srcImg.src;
+            buf.alt = srcImg.alt;
+            if (buf.complete && buf.naturalWidth) buf.onload();
+            lbBuf = 1 - lbBuf;
+            /* preload suseda — sledeca/predjasnja klik je instant */
+            [lbIdx - 1, lbIdx + 1].forEach(k => {
+                const img = lbItems[((k % n) + n) % n];
+                if (img) { const pre = new Image(); pre.src = img.dataset.full || img.src; }
+            });
+        }
+
+        function closeLightbox() {
+            if (!lbOpen) return;
+            lbOpen = false;
+            lb.classList.remove('show');
+            lb.setAttribute('aria-hidden', 'true');
+            body.classList.remove('lb-open');
+            html.classList.remove('scroll-lock');
+            html.style.overflow = '';
+        }
+
+        $('.lb-close', lb).addEventListener('click', closeLightbox);
+        $('.lb-prev', lb).addEventListener('click', () => showLB(lbIdx - 1));
+        $('.lb-next', lb).addEventListener('click', () => showLB(lbIdx + 1));
+        lb.addEventListener('click', e => { if (e.target === lb) closeLightbox(); });
+
+        let swipeX = null;
+        lb.addEventListener('pointerdown', e => { swipeX = e.clientX; }, { passive: true });
+        lb.addEventListener('pointerup', e => {
+            if (swipeX === null) return;
+            const d = e.clientX - swipeX; swipeX = null;
+            if (Math.abs(d) > 55) showLB(lbIdx + (d < 0 ? 1 : -1));
+        }, { passive: true });
+
+        /* ============================================================
+           TASTATURA
+        ============================================================ */
+        document.addEventListener('keydown', e => {
+            if (lbOpen) {
+                if (e.key === 'Escape') closeLightbox();
+                else if (e.key === 'ArrowRight') showLB(lbIdx + 1);
+                else if (e.key === 'ArrowLeft')  showLB(lbIdx - 1);
+                return;
+            }
+            if (e.key === 'Escape' && mode === 'open') closeGallery();
+        });
+
+        /* lucide ikonice */
+        if (window.lucide) lucide.createIcons();
+    })();
+    </script>
 </body>
 </html>
+
