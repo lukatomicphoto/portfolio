@@ -393,7 +393,7 @@
             transition: color .8s ease, opacity .8s ease;
         }
         @media (hover: hover) {
-            .column:not(.active):not(.hidden):hover .col-num { color: var(--accent); }
+            body:not(.closing-cooldown) .column:not(.active):not(.hidden):not(.is-closing):hover .col-num { color: var(--accent); }
         }
         .column.active .col-num { opacity: 0; }
 
@@ -407,7 +407,7 @@
             pointer-events: none;
         }
         @media (hover: hover) {
-            .column:not(.active):not(.hidden):hover .title-group { opacity: 1; transform: translate3d(-50%, 0, 0); }
+            body:not(.closing-cooldown) .column:not(.active):not(.hidden):not(.is-closing):hover .title-group { opacity: 1; transform: translate3d(-50%, 0, 0); }
         }
         .column.active .title-group {
             opacity: 1;
@@ -417,9 +417,9 @@
         }
         /* Naslov se pri zatvaranju krece nagore i izlazi sa ekrana */
         .column.is-closing .title-group {
-            opacity: 0;
-            transform: translate3d(-50%, calc(-100vh - 100px), 0);
-            transform: translate3d(-50%, calc(-100dvh - 100px), 0);
+            opacity: 0 !important;
+            transform: translate3d(-50%, calc(-100vh - 100px), 0) !important;
+            transform: translate3d(-50%, calc(-100dvh - 100px), 0) !important;
             transition: opacity .5s var(--e-soft), transform .85s var(--e-out);
         }
 
@@ -445,9 +445,10 @@
                         opacity .4s ease calc(var(--i) * .035s);
         }
         @media (hover: hover) {
-            .column:not(.active):not(.hidden):hover .lt { transform: none; opacity: 1; }
+            body:not(.closing-cooldown) .column:not(.active):not(.hidden):not(.is-closing):hover .lt { transform: none; opacity: 1; }
         }
         .column.active .lt { transform: none; opacity: 1; }
+        .column.is-closing .lt { opacity: 0 !important; }
 
         .column.active .category-name {
             font-size: clamp(64px, 11vw, 160px);
@@ -632,8 +633,8 @@
                 letter-spacing: -.02em;
             }
             .column.is-closing .title-group {
-                transform: translate3d(-50%, calc(-100vh - 60px), 0);
-                transform: translate3d(-50%, calc(-100dvh - 60px), 0);
+                transform: translate3d(-50%, calc(-100vh - 60px), 0) !important;
+                transform: translate3d(-50%, calc(-100dvh - 60px), 0) !important;
             }
             .gallery { column-count: 2; column-gap: 6px; padding: 210px 5vw 12vh; }
             .gallery-item { margin-bottom: 6px; }
@@ -1064,6 +1065,7 @@
         let mode = 'idle';            // idle | opening | open | closing
         let activeCol = null;
         let openTimeout = null;
+        let cooldownTimeout = null;
 
         function afterTransition(el, ms, cb) {
             let done = false;
@@ -1192,6 +1194,8 @@
             if (mode !== 'idle' || col === activeCol) return;
             mode = 'opening';
             activeCol = col;
+            clearTimeout(cooldownTimeout);
+            body.classList.remove('closing-cooldown');
             col.setAttribute('aria-expanded', 'true');
 
             scrollTo(0, 0);
@@ -1239,6 +1243,8 @@
             col.setAttribute('aria-expanded', 'false');
             closeBtn.classList.remove('visible');
             clearTimeout(openTimeout);
+            clearTimeout(cooldownTimeout);
+            body.classList.add('closing-cooldown');
 
             const gallery = $('.gallery', col);
             gallery.style.width = document.documentElement.clientWidth + 'px';
@@ -1282,6 +1288,11 @@
                     progressBar.style.transform = 'scaleX(0)';
                     mode = 'idle';
                     activeCol = null;
+
+                    clearTimeout(cooldownTimeout);
+                    cooldownTimeout = setTimeout(() => {
+                        body.classList.remove('closing-cooldown');
+                    }, 800);
                 })(performance.now());
             });
         }
