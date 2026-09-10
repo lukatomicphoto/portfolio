@@ -1043,11 +1043,15 @@
                         figure.setAttribute('role', 'button');
                         figure.setAttribute('aria-label', 'Uvećaj fotografiju');
                         
-                        // Za galeriju vučemo manje slike (w=800), a za lightbox velike (w=1600) da sve bude brzo!
+// Provjera tipa fajla: PNG zadržava transparentnost bez kompresije
+                        const isPng = imgUrl.includes('.png');
+                        const maliUrl = isPng ? `${imgUrl}?w=800` : `${imgUrl}?w=800&q=80&auto=format`;
+                        const velikiUrl = isPng ? `${imgUrl}?w=1600` : `${imgUrl}?w=1600&q=95&auto=format`;
+
                         figure.innerHTML = `
                             <div class="gi-media">
-                                <img src="${imgUrl}?w=800&q=80&auto=format" 
-                                     data-full="${imgUrl}?w=1600&q=95&auto=format" 
+                                <img src="${maliUrl}" 
+                                     data-full="${velikiUrl}" 
                                      alt="Portfolio fotografija" loading="lazy" decoding="async">
                             </div>
                         `;
