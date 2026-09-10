@@ -301,10 +301,10 @@
         }
         .fg-layer { z-index: 6; transform: translate3d(0, var(--sy, 0px), 0); }
 
-        .column.active .sticky-layer,
-        .column.is-closing .sticky-layer { position: sticky; height: 100vh; height: 100dvh; }
+        .column.active .bg-layer,
+        .column.is-closing .bg-layer { position: sticky; height: 100vh; height: 100dvh; }
         .column.active .fg-layer,
-        .column.is-closing .fg-layer { margin-top: -100vh; margin-top: -100dvh; }
+        .column.is-closing .fg-layer { position: absolute; height: 100vh; height: 100dvh; margin-top: -100vh; margin-top: -100dvh; }
 
         /* ---------- pozadina: breathe (ken burns) + slika ---------- */
         .bg-breathe { position: absolute; top: -3%; left: -3%; width: 106%; height: 106%; }
@@ -404,21 +404,23 @@
             text-align: center; opacity: 0;
             transition: opacity .7s var(--e-soft), transform 1.25s var(--e-out);
             will-change: transform;
+            pointer-events: none;
         }
         @media (hover: hover) {
             .column:not(.active):not(.hidden):hover .title-group { opacity: 1; transform: translate3d(-50%, 0, 0); }
         }
         .column.active .title-group {
             opacity: 1;
-            transform: translate3d(-50%, calc(-100vh + 232px), 0) scale(1.45);
-            transform: translate3d(-50%, calc(-100dvh + 232px), 0) scale(1.45);
+            transform: translate3d(-50%, calc(-100vh + 200px), 0);
+            transform: translate3d(-50%, calc(-100dvh + 200px), 0);
             transition: transform 1.65s var(--e-out), opacity .8s ease;
         }
-        /* FIX: naslov se pri zatvaranju vraca na dno */
+        /* Naslov se pri zatvaranju krece nagore i izlazi sa ekrana */
         .column.is-closing .title-group {
             opacity: 0;
-            transform: translate3d(-50%, 26px, 0) scale(1);
-            transition: opacity .5s ease, transform .9s var(--e-out);
+            transform: translate3d(-50%, calc(-100vh - 100px), 0);
+            transform: translate3d(-50%, calc(-100dvh - 100px), 0);
+            transition: opacity .5s var(--e-soft), transform .85s var(--e-out);
         }
 
         .category-name {
@@ -427,11 +429,17 @@
             letter-spacing: .14em; text-transform: uppercase;
             white-space: nowrap; line-height: 1.1;
             color: var(--white);
+            -webkit-text-stroke: 0px transparent;
             text-shadow: 0 2px 30px rgba(0,0,0,.4);
             overflow: hidden; padding: .08em .05em;
+            transition: font-size 1.65s var(--e-out), letter-spacing 1.65s var(--e-out),
+                        color 1.2s var(--e-out), -webkit-text-stroke 1.2s var(--e-out),
+                        text-shadow .8s ease;
         }
         .lt {
             display: inline-block;
+            color: inherit;
+            -webkit-text-stroke: inherit;
             transform: translate3d(0, 120%, 0); opacity: 0;
             transition: transform .85s var(--e-out) calc(var(--i) * .035s),
                         opacity .4s ease calc(var(--i) * .035s);
@@ -440,6 +448,23 @@
             .column:not(.active):not(.hidden):hover .lt { transform: none; opacity: 1; }
         }
         .column.active .lt { transform: none; opacity: 1; }
+
+        .column.active .category-name {
+            font-size: clamp(64px, 11vw, 160px);
+            letter-spacing: -.02em;
+            line-height: .85;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(237,237,233,.45);
+            text-shadow: none;
+        }
+        .column.is-closing .category-name {
+            font-size: clamp(64px, 11vw, 160px);
+            letter-spacing: -.02em;
+            line-height: .85;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(237,237,233,.45);
+            text-shadow: none;
+        }
 
         .cn-sub {
             margin-top: 16px;
@@ -598,11 +623,17 @@
             .title-group { bottom: 56px; }
             .category-name { font-size: 19px; }
             .column.active .title-group {
-                transform: translate3d(-50%, calc(-100vh + 150px), 0) scale(1.12);
-                transform: translate3d(-50%, calc(-100dvh + 150px), 0) scale(1.12);
+                transform: translate3d(-50%, calc(-100vh + 140px), 0);
+                transform: translate3d(-50%, calc(-100dvh + 140px), 0);
+            }
+            .column.active .category-name,
+            .column.is-closing .category-name {
+                font-size: clamp(38px, 11vw, 68px);
+                letter-spacing: -.02em;
             }
             .column.is-closing .title-group {
-                transform: translate3d(-50%, 26px, 0) scale(1);
+                transform: translate3d(-50%, calc(-100vh - 60px), 0);
+                transform: translate3d(-50%, calc(-100dvh - 60px), 0);
             }
             .gallery { column-count: 2; column-gap: 6px; padding: 210px 5vw 12vh; }
             .gallery-item { margin-bottom: 6px; }
