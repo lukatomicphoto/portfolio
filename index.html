@@ -947,20 +947,20 @@
     </main>
 
     <script>
-    (() => {
+   (async () => {
         'use strict';
 
         /* ============================================================
            CONFIG & HELPERS
-        ============================================================ */
+        =========================================================== */
         const $  = (s, c = document) => c.querySelector(s);
         const $$ = (s, c = document) => [...c.querySelectorAll(s)];
 
         const CFG = {
-            openMs: 1750,        // trajanje flex otvaranja (mora >= CSS 1.65s)
+            openMs: 1750,        // trajanje flex otvaranja
             galleryDelay: 620,   // kada galerija pocinje da ulazi
-            minLoad: 1500,       // minimalno trajanje loadera (cinematic)
-            maxLoad: 9000        // fallback ako neka slika zapne
+            minLoad: 1500,       // minimalno trajanje loadera
+            maxLoad: 9000        // fallback
         };
 
         const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -975,11 +975,65 @@
         const progressBar = $('.progress i');
         const loader     = $('#loader');
 
-        let mode = 'idle';           // idle | opening | open | closing
+        /* ============================================================
+           SANITY API - POVLAČENJE PODATAKA (NOVO!)
+        =========================================================== */
+        try {
+            const PROJECT_ID = 'y63ygz5a';
+            // Tražimo kolone sortirane po rednom broju (order), izvlačimo coverUrl i galleryUrls
+            const QUERY = encodeURIComponent('*[_type == "category"] | order(order asc) { order, "cover": coverImage.asset->url, "gallery": gallery[].asset->url }');
+            
+            // Čekamo da Sanity vrati podatke
+            const res = await fetch(`https://${PROJECT_ID}.api.sanity.io/v2022-03-07/data/query/production?query=${QUERY}`);
+            const { result } = await res.json();
+
+            // Ubacujemo prave slike u HTML
+            result.forEach(cat => {
+                if (!cat.order) return;
+                const col = cols[cat.order - 1]; // Redni broj 1 ide u kolonu 0
+                if (!col) return;
+
+                // 1. Mijenjamo cover sliku (uz automatsku CDN optimizaciju na 1200px)
+                if (cat.cover) {
+                    col.querySelector('.bg-image').src = `${cat.cover}?w=1200&q=85&auto=format`;
+                }
+
+                // 2. Mijenjamo galeriju
+                if (cat.gallery && cat.gallery.length > 0) {
+                    const gallery = col.querySelector('.gallery');
+                    gallery.innerHTML = ''; // Brišemo tvoje stare placeholder slike sa Pexelsa
+
+                    cat.gallery.forEach(imgUrl => {
+                        const figure = document.createElement('figure');
+                        figure.className = 'gallery-item';
+                        figure.setAttribute('data-cursor', 'Pogledaj');
+                        figure.setAttribute('tabindex', '0');
+                        figure.setAttribute('role', 'button');
+                        figure.setAttribute('aria-label', 'Uvećaj fotografiju');
+                        
+                        // Za galeriju vučemo manje slike (w=800), a za lightbox velike (w=1600) da sve bude brzo!
+                        figure.innerHTML = `
+                            <div class="gi-media">
+                                <img src="${imgUrl}?w=800&q=80&auto=format" 
+                                     data-full="${imgUrl}?w=1600&q=95&auto=format" 
+                                     alt="Portfolio fotografija" loading="lazy" decoding="async">
+                            </div>
+                        `;
+                        gallery.appendChild(figure);
+                    });
+                }
+            });
+        } catch(err) {
+            console.error("Greška pri komunikaciji sa Sanity bazom:", err);
+        }
+
+        /* ============================================================
+           OSTATAK ORIGINALNOG KODA KREĆE OVDE
+        =========================================================== */
+        let mode = 'idle';            // idle | opening | open | closing
         let activeCol = null;
         let openTimeout = null;
 
-        /* Ceka kraj flex-grow tranzicije, uz timeout fallback (setTimeout jedini nije pouzdan) */
         function afterTransition(el, ms, cb) {
             let done = false;
             const fin = () => { if (done) return; done = true; el.removeEventListener('transitionend', onEnd); cb(); };
@@ -988,9 +1042,7 @@
             setTimeout(fin, ms + 120);
         }
 
-        /* ============================================================
-           BUILD — slova naslova, brojevi, meta podaci, eventi
-        ============================================================ */
+        /* Dodavanje eventa - pošto je Sanity završio, sada čita NOVE slike! */
         cols.forEach((col, i) => {
             col.style.setProperty('--n', i);
 
@@ -1005,6 +1057,7 @@
                 nameEl.appendChild(s);
             });
 
+            // Sada pronalazi tvoje prave slike dodate iznad
             const items = $$('.gallery-item', col);
             $('.col-num', col).textContent = pad(i + 1);
 
@@ -1023,9 +1076,7 @@
 
         closeBtn.addEventListener('click', closeGallery);
 
-        /* ============================================================
-           LOADER — prati realno ucitavanje hero slika
-        ============================================================ */
+        /* LOADER - sada će pratiti prave slike! */
         const heroImgs = $$('.bg-image');
         const total = heroImgs.length;
         let loaded = 0, target = 0, cur = 0, finished = false;
@@ -1041,7 +1092,7 @@
         (function loaderTick() {
             if (finished) return;
             const elapsed = performance.now() - t0;
-            if (elapsed > CFG.maxLoad) target = 1;              // fallback
+            if (elapsed > CFG.maxLoad) target = 1;              
             cur += (target - cur) * 0.07;
             const pct = Math.min(1, cur);
             barEl.style.transform = `scaleX(${pct})`;
@@ -1059,9 +1110,6 @@
             requestAnimationFrame(loaderTick);
         })();
 
-        /* ============================================================
-           REVEAL GALERIJE — IntersectionObserver + stagger
-        ============================================================ */
         const io = new IntersectionObserver(entries => {
             const fresh = entries.filter(e => e.isIntersecting && !e.target.classList.contains('in'));
             if (!fresh.length) return;
@@ -1073,12 +1121,8 @@
             });
         }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
 
-        /* ============================================================
-           GLOBALNI rAF LOOP — parallax, progress, scroll-parallax
-        ============================================================ */
         let parCol = null, tpx = 0, tpy = 0, cpx = 0, cpy = 0;
 
-        /* parallax targeti samo u idle rezimu, samo za kolonu pod mishom */
         container.addEventListener('pointermove', e => {
             if (mode !== 'idle' || REDUCED || !FINE) return;
             const col = e.target.closest('.column');
@@ -1092,17 +1136,16 @@
             tpx = (e.clientX / innerWidth  - .5) * 14;
             tpy = (e.clientY / innerHeight - .5) * 10;
         }, { passive: true });
+        
         container.addEventListener('pointerleave', () => { tpx = 0; tpy = 0; });
 
         (function tick() {
-            /* parallax pozadine */
             if (parCol && mode === 'idle') {
                 cpx += (tpx - cpx) * .06; cpy += (tpy - cpy) * .06;
                 parCol.style.setProperty('--px', cpx.toFixed(2) + 'px');
                 parCol.style.setProperty('--py', cpy.toFixed(2) + 'px');
             }
 
-            /* scroll progress + suptilan parallax aktivne pozadine */
             if (mode === 'open' || mode === 'closing') {
                 const max = html.scrollHeight - innerHeight;
                 const sy = scrollY;
@@ -1114,9 +1157,6 @@
             requestAnimationFrame(tick);
         })();
 
-        /* ============================================================
-           OPEN
-        ============================================================ */
         function openGallery(col) {
             if (mode !== 'idle' || col === activeCol) return;
             mode = 'opening';
@@ -1129,19 +1169,15 @@
             const gallery = $('.gallery', col);
             const vw = document.documentElement.clientWidth;
 
-            /* 1) Zamrzni fizicke sirine ostalih kolona + galerije
-                  => nema "nasilnog" reskaliranja slika i re-flow-a 30+ thumbs */
             others.forEach(c => $$('.sticky-layer', c).forEach(l => l.style.width = c.offsetWidth + 'px'));
             gallery.style.width = vw + 'px';
             gallery.style.maxWidth = 'none';
 
-            /* prekini parallax */
             if (parCol) { parCol = null; }
             col.style.setProperty('--px', '0px');
             col.style.setProperty('--py', '0px');
             tpx = tpy = cpx = cpy = 0;
 
-            /* 2) force reflow pa klase — transition krece iz stabilnog stanja */
             void col.offsetWidth;
             others.forEach(c => { c.classList.remove('active'); c.classList.add('hidden'); });
             col.classList.remove('hidden');
@@ -1149,7 +1185,6 @@
             html.classList.add('is-open');
             closeBtn.classList.add('visible');
 
-            /* 3) galerija ulazi malo kasnije — "overlap" tehnika iz montaze */
             clearTimeout(openTimeout);
             openTimeout = setTimeout(() => {
                 if (mode !== 'opening' && mode !== 'open') return;
@@ -1157,7 +1192,6 @@
                 $$('.gallery-item', col).forEach(it => io.observe(it));
             }, REDUCED ? 60 : CFG.galleryDelay);
 
-            /* 4) otpusti zamrznuto tek kad se flex skroz smiri */
             afterTransition(col, CFG.openMs, () => {
                 others.forEach(c => $$('.sticky-layer', c).forEach(l => l.style.width = ''));
                 gallery.style.width = '';
@@ -1166,9 +1200,6 @@
             });
         }
 
-        /* ============================================================
-           CLOSE — sinkronizovan scroll + kolapss
-        ============================================================ */
         function closeGallery() {
             if (mode !== 'open' || !activeCol) return;
             mode = 'closing';
@@ -1181,19 +1212,16 @@
             const gallery = $('.gallery', col);
             gallery.style.width = document.documentElement.clientWidth + 'px';
             gallery.style.maxWidth = 'none';
-            gallery.classList.remove('show');          // fade-out krece ODMAH, paralelno sa scroll-om
+            gallery.classList.remove('show');          
             $$('.gallery-item', col).forEach(it => {
                 io.unobserve(it);
                 it.classList.remove('in');
             });
 
             col.classList.add('is-closing');
-            /* zakljucaj skrol dok traje sinhronizovana animacija zatvaranja —
-               inace korisnicki wheel "sece" easing i pravi jank */
             html.style.overflow = 'hidden';
 
             requestAnimationFrame(() => {
-                /* sve kolone se vracaju istovremeno — overlap efekat */
                 col.classList.remove('active');
                 cols.forEach(c => {
                     c.classList.remove('hidden');
@@ -1209,8 +1237,6 @@
                     const y = startScroll * (1 - easeInOutQuart(p));
                     if (startScroll > 0) scrollTo(0, y);
 
-                    /* STICKY FIX (tvoj trik, sad preko CSS varijable --sy):
-                       slojevi aktivne kolone ostaju "zakucani" za viewport dok scroll traje */
                     col.style.setProperty('--sy', y.toFixed(1) + 'px');
 
                     if (p < 1) { requestAnimationFrame(step); return; }
@@ -1229,9 +1255,6 @@
             });
         }
 
-        /* ============================================================
-           LIGHTBOX — A/B crossfade bufferi, preload suseda, swipe
-        ============================================================ */
         const lb = $('#lightbox');
         const lbImgs = $$('.lb-img', lb);
         const lbCur = $('.lb-cur', lb), lbTotal = $('.lb-total', lb);
@@ -1263,7 +1286,7 @@
             buf.alt = srcImg.alt;
             if (buf.complete && buf.naturalWidth) buf.onload();
             lbBuf = 1 - lbBuf;
-            /* preload suseda — sledeca/predjasnja klik je instant */
+            
             [lbIdx - 1, lbIdx + 1].forEach(k => {
                 const img = lbItems[((k % n) + n) % n];
                 if (img) { const pre = new Image(); pre.src = img.dataset.full || img.src; }
@@ -1293,9 +1316,6 @@
             if (Math.abs(d) > 55) showLB(lbIdx + (d < 0 ? 1 : -1));
         }, { passive: true });
 
-        /* ============================================================
-           TASTATURA
-        ============================================================ */
         document.addEventListener('keydown', e => {
             if (lbOpen) {
                 if (e.key === 'Escape') closeLightbox();
@@ -1306,7 +1326,6 @@
             if (e.key === 'Escape' && mode === 'open') closeGallery();
         });
 
-        /* lucide ikonice */
         if (window.lucide) lucide.createIcons();
     })();
     </script>
