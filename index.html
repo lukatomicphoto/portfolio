@@ -1049,10 +1049,11 @@
                         const velikiUrl = isPng ? `${imgUrl}?w=1600` : `${imgUrl}?w=1600&q=95&auto=format`;
 
                         figure.innerHTML = `
-                            <div class="gi-media">
+                            <div class="gi-media" ${isPng ? 'style="background: transparent;"' : ''}>
                                 <img src="${maliUrl}" 
                                      data-full="${velikiUrl}" 
-                                     alt="Portfolio fotografija" loading="lazy" decoding="async">
+                                     alt="Portfolio fotografija" loading="lazy" decoding="async"
+                                     ${isPng ? 'style="background: transparent;"' : ''}>
                             </div>
                         `;
                         gallery.appendChild(figure);
@@ -1330,6 +1331,9 @@
             buf.onload = () => { buf.classList.add('cur'); prev.classList.remove('cur'); };
             buf.src = srcImg.dataset.full || srcImg.src;
             buf.alt = srcImg.alt;
+            // Briše sivu pozadinu i sjenku ako je u pitanju PNG tekst u lightboxu
+            buf.style.background = buf.src.includes('.png') ? 'transparent' : '';
+            buf.style.boxShadow = buf.src.includes('.png') ? 'none' : '';
             if (buf.complete && buf.naturalWidth) buf.onload();
             lbBuf = 1 - lbBuf;
             
