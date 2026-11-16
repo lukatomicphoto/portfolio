@@ -18,6 +18,21 @@ uniform vec2 uRes, uPtr;
 uniform float uAxis, uTime, uAny, uDark, uBlur, uShift, uDpr, uPress, uWarp;
 uniform float uB[7], uQ[6], uLag[6], uA[6], uF[6], uHv[6], uOp[6], uIn[6], uZoom[6], uLod[6], uHas[6];
 uniform sampler2D uT0, uT1, uT2, uT3, uT4, uT5;
+uniform sampler2D uD0, uD1, uD2, uD3, uD4, uD5;
+uniform float uDep[6];
+uniform sampler2D uP;
+uniform sampler2D uPD;
+uniform float uPDep;
+uniform float uPA, uHasP, uInfo, uPOff, uPIn, uPHv, uPLod, uPSplit;
+uniform vec2 uPar;
+float dep(int i, vec2 uv){
+  if (i == 0) return textureLod(uD0, uv, 0.).r;
+  if (i == 1) return textureLod(uD1, uv, 0.).r;
+  if (i == 2) return textureLod(uD2, uv, 0.).r;
+  if (i == 3) return textureLod(uD3, uv, 0.).r;
+  if (i == 4) return textureLod(uD4, uv, 0.).r;
+  return textureLod(uD5, uv, 0.).r;
+}
 
 vec3 tex(int i, vec2 uv, float l){
   if (i == 0) return textureLod(uT0, uv, l).rgb;
@@ -40,7 +55,41 @@ void main(){
   float Cs = ax ? uRes.y : uRes.x;
   vec3 bg = vec3(.039, .039, .043);
   float grain = hash(px + fract(uTime) * 91.7) - .5;
-  if (a < uB[0]) { o = vec4(bg + grain * .012, 1.); return; }
+  if (a < uB[0]) {
+    vec3 c = bg;
+    if (uHasP > .5) {
+      vec2 r0 = ax ? vec2(uPOff, 0.) : vec2(uRes.x * .4, uPOff);
+      vec2 rs = ax ? vec2(uInfo, uRes.y * .76) : vec2(uRes.x * .6, uInfo);
+      float z = 1.3 + .04 * uPHv;
+      float hf = max(rs.y, rs.x / uPA) * z, wf = hf * uPA;
+      vec2 pc = vec2(r0.x + rs.x * .5, r0.y + hf * .5 - hf * .085);
+      vec2 pp = clamp((uPtr - pc) / uRes, -1., 1.);
+      pc -= pp * .035 * vec2(wf, hf) * uPHv;
+      vec2 puv = (px - pc) / vec2(wf, hf) + .5;
+      if (uPDep > 0.) {
+        vec2 ps = uPar * uPDep * uPIn;
+        float e1 = textureLod(uPD, puv, 0.).r;
+        float e2 = textureLod(uPD, puv + ps * (e1 - .5), 0.).r;
+        puv += ps * (mix(e1, e2, .7) - .5);
+      }
+      vec2 sd = ax ? vec2(uPSplit, 0.) : vec2(0., uPSplit);
+      vec3 ph = vec3(textureLod(uP, puv + sd, uPLod).r, textureLod(uP, puv, uPLod).g, textureLod(uP, puv - sd, uPLod).b);
+      vec2 rq = (px - r0) / rs;
+      float fade = ax ? 1. - smoothstep(.46, .97, rq.y) : (1. - smoothstep(.4, .92, rq.y)) * smoothstep(0., .5, rq.x);
+      float inside = step(0., rq.x) * step(rq.x, 1.) * step(0., rq.y) * step(rq.y, 1.);
+      // lighten against the page colour: the photo's blacks become the site background, never a darker hole
+      ph = max(ph, bg);
+      float pl = distance(px, uPtr) / (Cs * .6);
+      ph *= 1. + .14 * uPHv * exp(-pl * pl * 2.4);
+      c = mix(bg, ph, inside * fade * uPIn);
+    }
+    // the first column casts a soft shadow onto the contact column, like any raised neighbour
+    c *= 1. - .4 * exp(-(uB[0] - a) / (34. * uDpr));
+    vec2 vgi = px / uRes - .5;
+    c *= 1. - .3 * smoothstep(.35, .95, length(vgi * vec2(1., .85)) * 1.25);
+    o = vec4(c + grain * .03, 1.);
+    return;
+  }
 
   int i = 0;
   for (int k = 1; k < 6; k++) if (a >= uB[k]) i = k;
@@ -63,6 +112,13 @@ void main(){
   cen.y += uShift * op + uIn[i] * uRes.y * .06;
 
   vec2 uv = (px - cen) / dims + .5;
+  // depth parallax: near parts of the photograph (bright in the depth map) travel further than far ones
+  if (uDep[i] > 0.) {
+    vec2 sh = uPar * uDep[i] * max(hv, op);
+    float d1 = dep(i, uv);
+    float d2 = dep(i, uv + sh * (d1 - .5));
+    uv += sh * (mix(d1, d2, .7) - .5);
+  }
   // a soft lens that trails the pointer while it moves
   vec2 dp = (px - uPtr) / (Cs * .32);
   uv -= dp * exp(-dot(dp, dp) * 2.2) * uWarp * hv * .035;
@@ -128,15 +184,16 @@ void main(){
 
   const U = {};
   ['uRes', 'uPtr', 'uAxis', 'uTime', 'uAny', 'uDark', 'uBlur', 'uShift', 'uDpr', 'uPress', 'uWarp',
-    'uB', 'uQ', 'uLag', 'uA', 'uF', 'uHv', 'uOp', 'uIn', 'uZoom', 'uLod', 'uHas'].forEach(n => { U[n] = gl.getUniformLocation(prog, n); });
+    'uPar', 'uDep', 'uPDep', 'uPA', 'uHasP', 'uInfo', 'uPOff', 'uPIn', 'uPHv', 'uPLod', 'uPSplit', 'uB', 'uQ', 'uLag', 'uA', 'uF', 'uHv', 'uOp', 'uIn', 'uZoom', 'uLod', 'uHas'].forEach(n => { U[n] = gl.getUniformLocation(prog, n); });
 
-  const has = new Float32Array(N), texH = new Float32Array(N).fill(1);
+  const has = new Float32Array(N), texH = new Float32Array(N).fill(1), depth = new Float32Array(N);
   const maxSide = Math.min(2560, gl.getParameter(gl.MAX_TEXTURE_SIZE));
   for (let i = 0; i < N; i++) {
     gl.activeTexture(gl.TEXTURE0 + i);
     gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([10, 10, 11, 255]));
     gl.uniform1i(gl.getUniformLocation(prog, 'uT' + i), i);
+    gl.uniform1i(gl.getUniformLocation(prog, 'uD' + i), 0); // points at a real texture until a depth map arrives
   }
 
   let dpr = 1;
@@ -159,6 +216,50 @@ void main(){
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       has[i] = 1; texH[i] = src.height || img.naturalHeight;
     },
+    portraitH: 0,
+    setPortrait(img) {
+      gl.activeTexture(gl.TEXTURE0 + 2 * N);
+      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.uniform1i(gl.getUniformLocation(prog, 'uP'), 2 * N);
+      gl.uniform1f(U.uPA, img.naturalWidth / img.naturalHeight); gl.uniform1f(U.uHasP, 1);
+      this.portraitH = img.naturalHeight; this.portraitA = img.naturalWidth / img.naturalHeight;
+    },
+    setPortraitDepth(img, strength) {
+      const sc = 640 / Math.max(img.naturalWidth, img.naturalHeight);
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+      const x = c.getContext('2d'); x.filter = 'blur(8px)'; x.drawImage(img, 0, 0, c.width, c.height);
+      gl.activeTexture(gl.TEXTURE0 + 2 * N + 1);
+      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.uniform1i(gl.getUniformLocation(prog, 'uPD'), 2 * N + 1);
+      gl.uniform1f(U.uPDep, strength);
+    },
+    depth,
+    setDepth(i, img, strength) {
+      // small and slightly blurred: hard depth edges would tear the photograph apart
+      const sc = 640 / Math.max(img.naturalWidth, img.naturalHeight);
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+      const x = c.getContext('2d'); x.filter = 'blur(8px)'; x.drawImage(img, 0, 0, c.width, c.height);
+      gl.activeTexture(gl.TEXTURE0 + N + i);
+      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.uniform1i(gl.getUniformLocation(prog, 'uD' + i), N + i);
+      depth[i] = strength;
+    },
     resize(w, h) {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
@@ -175,6 +276,8 @@ void main(){
       gl.uniform1fv(U.uB, u.B); gl.uniform1fv(U.uQ, u.Q); gl.uniform1fv(U.uLag, u.lag); gl.uniform1fv(U.uA, u.A);
       gl.uniform1fv(U.uF, u.F); gl.uniform1fv(U.uHv, u.hv); gl.uniform1fv(U.uOp, u.op); gl.uniform1fv(U.uIn, u.intro);
       gl.uniform1fv(U.uZoom, u.zoom); gl.uniform1fv(U.uLod, u.lod); gl.uniform1fv(U.uHas, has);
+      gl.uniform1f(U.uInfo, u.info * dpr); gl.uniform1f(U.uPOff, u.pOff * dpr); gl.uniform1f(U.uPIn, u.pIn); gl.uniform1f(U.uPHv, u.pHv);
+      gl.uniform1f(U.uPLod, u.pLod); gl.uniform1f(U.uPSplit, u.pSplit); gl.uniform1fv(U.uDep, depth); gl.uniform2f(U.uPar, u.parX, u.parY);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     },
   };

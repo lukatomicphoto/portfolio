@@ -28,7 +28,8 @@ const TUNE = {
   falloff: 0.8,          // each divider further from the source is softer -> the push travels as a wave
   jellyK: 85, jellyZ: 0.5,     // the photo inside a column is elastic: it lags its frame, squashes and recovers
   zoomHover: 0.055, zoomOpen: 0.06,
-  parallax: 0.07,        // background travel relative to gallery scroll
+  parallax: 0.07,
+  depth: 0.028,          // depth parallax: how far the nearest parts travel (fraction of the photo)        // background travel relative to gallery scroll
 };
 
 /* ───────── Spring ───────── */
@@ -39,6 +40,7 @@ class Spring {
   step(dt) {
     const k = reduced ? this.k * 3 : this.k, z = reduced ? 1 : this.z;
     const c = 2 * z * Math.sqrt(k);
+    if (!(dt > 0)) return this.x;
     let n = Math.ceil(dt / 0.004); const h = dt / n;
     while (n--) { this.v += (-k * (this.x - this.t) - c * this.v) * h; this.x += this.v * h; }
     return this.x;
@@ -66,15 +68,17 @@ const stage = $('#stage'), info = $('#info'), gal = $('#gallery'), grid = $('#gr
 const galMeta = $('#galMeta'), galNext = $('#galNext'), mark = $('#mark'), back = $('#back');
 const cats = SITE.categories.filter(c => c.cover);
 const N = cats.length;
+const PATHS = location.protocol.startsWith('http'); // real URLs (/sport/) online, #sport when opened as a file
 
 
 const panels = cats.map((c, i) => {
   const a = el('a', 'panel');
-  a.href = '#' + c.slug; a.draggable = false;
+  a.href = PATHS ? `/${c.slug}/` : '#' + c.slug; a.draggable = false;
   a.setAttribute('aria-label', `${c.title} — ${c.photos.length} photographs`);
   a.style.zIndex = i + 1;
   const imgWrap = el('div', 'panel-img');
-  const img = new Image(); img.alt = ''; img.draggable = false; img.decoding = 'async'; img.src = c.cover.src;
+  const img = new Image(); img.alt = c.cover.alt || `${c.title} photography by ${SITE.name}`; img.draggable = false; img.decoding = 'async';
+  img.src = c.cover.small && Math.max(innerWidth, innerHeight) * Math.min(devicePixelRatio || 1, 2) < 1700 ? c.cover.small : c.cover.src;
   imgWrap.append(img);
   const dim = el('div', 'panel-dim'), scrim = el('div', 'panel-scrim');
   const wrap = el('div', 'panel-labelwrap');
@@ -114,12 +118,15 @@ let pressing = false, pressIdx = -1, explored = false, pressAt = [0, 0];
 let infoOpen = false, infoSize = 0, infoLeaveAt = 0;
 let openedAt = 0, closedAt = 0, pendingBuild = -1, built = -1;
 let galY = 0, wheelPos = null, wheelTarget = 0;
-let items = [], photos = [];
+let items = [], photos = [], cells = [];
 const ptr = { x: -1, y: -1, inside: false, type: 'mouse', onStage: false, onPhoto: false, onUI: false };
 
 const TS = Array.from({ length: N }, () => spring(0, TUNE.smooth, 1));            // eased targets
 const B = Array.from({ length: N }, () => spring(0, TUNE.kHover, TUNE.zHover)); // B[0] = left origin, B[1..] = dividers
 const warp = spring(0, 60, 1);
+const parX = spring(0, 55, 1), parY = spring(0, 55, 1);
+const infoLag = spring(0, 190, 0.66);   // contact content trails the column edge, then catches up
+const infoHv = spring(0, 90, 1);
 const GLS = window.createStageGL ? window.createStageGL($('#gl'), N) : null;
 if (GLS) root.classList.add('has-gl');
 const GU = GLS && { B: new Float32Array(N + 1), Q: new Float32Array(N), lag: new Float32Array(N), A: new Float32Array(N), F: new Float32Array(N),
@@ -206,14 +213,20 @@ function closeCat() {
   document.body.classList.remove('is-open');
   wheelPos = null;
 }
+function currentSlug() {
+  const h = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+  if (h && cats.some(c => c.slug === h)) return h;
+  return PATHS ? decodeURIComponent(location.pathname.split('/').filter(Boolean)[0] || '') : '';
+}
 function route() {
-  const slug = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+  const slug = currentSlug();
   const i = cats.findIndex(c => c.slug === slug);
+  if (PATHS && location.hash && i >= 0) history.replaceState(null, '', `/${slug}/`); // old #sport links keep working
+  document.title = i >= 0 ? cats[i].pageTitle || `${cats[i].title} — ${SITE.name}` : SITE.pageTitle || document.title;
   if (i >= 0) openCat(i); else closeCat();
 }
 function go(slug) {
-  const cur = location.hash.replace(/^#\/?/, '');
-  if (slug !== cur) history.pushState(null, '', slug ? '#' + slug : location.pathname + location.search);
+  if (slug !== currentSlug()) history.pushState(null, '', PATHS ? (slug ? `/${slug}/` : '/') : (slug ? '#' + slug : location.pathname + location.search));
   route();
 }
 addEventListener('popstate', route);
@@ -230,16 +243,24 @@ function setInfo(v) {
 /* ───────── Gallery: justified rows computed from each photo's shape ───────── */
 function buildGallery(i) {
   const c = cats[i];
-  built = i; photos = c.photos;
+  built = i; photos = c.photos; items = []; cells = [];
   grid.textContent = '';
-  items = photos.map((p, n) => {
-    const b = el('button', 'ph'); b.type = 'button';
-    b.setAttribute('aria-label', `${c.title}, photograph ${n + 1} of ${photos.length} — open fullscreen`);
-    const im = new Image(); im.alt = ''; im.loading = 'lazy'; im.decoding = 'async'; im.draggable = false; im.src = p.src;
-    b.append(im);
-    b.addEventListener('click', () => LB.open(n));
-    grid.append(b);
-    return b;
+  let n = 0;
+  (c.items || c.photos).forEach(p => {
+    let node;
+    if (p.text) {
+      node = el('div', 'ph ph-text', `<h2>${esc(p.title)}</h2>${p.note ? `<p>${esc(p.note)}</p>` : ''}`);
+    } else {
+      const k = n++;
+      node = el('button', 'ph'); node.type = 'button';
+      node.setAttribute('aria-label', `${p.alt || c.title}, photograph ${k + 1} of ${photos.length} — open fullscreen`);
+      const im = new Image(); im.alt = p.alt || ''; im.loading = 'lazy'; im.decoding = 'async'; im.draggable = false; im.src = p.thumb || p.src;
+      node.append(im);
+      node.addEventListener('click', () => LB.open(k));
+      items.push(node);
+    }
+    grid.append(node);
+    cells.push({ node, p });
   });
   galMeta.innerHTML = `<span>${esc(c.title)}</span><span>${String(photos.length).padStart(2, '0')} frames</span>`;
   const nxt = cats[(i + 1) % N];
@@ -251,15 +272,17 @@ function buildGallery(i) {
 
 function layoutGrid() {
   const width = grid.clientWidth;
-  if (!width || !photos.length) return;
+  if (!width || !cells.length) return;
   const gap = axisX ? 10 : 6;
   const target = axisX ? clamp(H * 0.44, 220, 480) : clamp(W * 0.62, 150, 300);
+  // a text tile takes one cell of the grid on wide screens and a full-width strip on phones
+  const ratio = c => (c.p.text ? (axisX ? 0.8 : width / 150) : c.p.w / c.p.h);
   let row = [], ar = 0, y = 0;
   const commit = (h, stretch) => {
     let x = 0;
-    row.forEach((n, j) => {
-      const w = h * photos[n].w / photos[n].h;
-      const s = items[n].style;
+    row.forEach((c, j) => {
+      const w = h * ratio(c);
+      const s = c.node.style;
       s.left = x + 'px'; s.top = y + 'px';
       s.width = (stretch && j === row.length - 1 ? width - x : w) + 'px'; s.height = h + 'px';
       s.setProperty('--d', j * 70 + 'ms');
@@ -267,8 +290,8 @@ function layoutGrid() {
     });
     y += h + gap; row = []; ar = 0;
   };
-  photos.forEach((p, n) => {
-    row.push(n); ar += p.w / p.h;
+  cells.forEach(c => {
+    row.push(c); ar += ratio(c);
     const h = (width - gap * (row.length - 1)) / ar;
     if (h <= target) commit(h, true);
   });
@@ -306,7 +329,12 @@ const LB = (() => {
     const sc = Math.min(mw / p.w, mh / p.h), w = p.w * sc, h = p.h * sc;
     return { x: (W - w) / 2, y: (H - h) / 2, w, h };
   };
-  const place = (im, f, p) => { im.src = p.src; im.style.width = f.w + 'px'; im.style.height = f.h + 'px'; };
+  const place = (im, f, p) => {
+    im.style.width = f.w + 'px'; im.style.height = f.h + 'px'; im.alt = p.alt || '';
+    if (im.dataset.full === p.src) return;
+    im.dataset.full = p.src; im.src = p.thumb || p.src;
+    if (p.thumb) { const full = new Image(); full.src = p.src; (full.decode ? full.decode() : Promise.resolve()).then(() => { if (im.dataset.full === p.src) im.src = p.src; }).catch(() => {}); }
+  };
   const prevB = $('#lbPrev'), nextB = $('#lbNext'), ui = [count, $('#lbClose'), prevB, nextB];
   const label = () => { count.textContent = `${String(idx + 1).padStart(2, '0')} / ${String(photos.length).padStart(2, '0')}`; prevB.disabled = idx === 0; nextB.disabled = idx === photos.length - 1; };
 
@@ -475,10 +503,11 @@ addEventListener('resize', () => { measure(state === 'home' || state === 'intro'
 
 /* ───────── Frame ───────── */
 const put = (p, key, node, prop, val) => { if (p.cache[key] !== val) { p.cache[key] = val; node.style[prop] = val; } };
-let last = performance.now(), introAt = 0;
+let last = performance.now(), introAt = 0, loaded = 0;
+const loaderBar = $('.loader i');
 
 function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000); last = now; // real time, so slow frames never become slow motion
+  const dt = clamp((now - last) / 1000, 0, 0.1); last = now; // real time, so slow frames never become slow motion
 
   // state machine driven by time + physics, never by stacked timeouts
   if (state === 'intro' && introAt) {
@@ -491,7 +520,7 @@ function frame(now) {
     if (pendingBuild < 0 && now - openedAt > 260 && (settled || now - openedAt > 1400)) {
       state = 'open';
       gal.classList.add('on'); gal.inert = false;
-      items.forEach(it => reveal.observe(it));
+      cells.forEach(c => reveal.observe(c.node));
     }
   } else if (state === 'closing' && now - closedAt > 150) {
     active = -1; state = 'home'; built = -1;
@@ -514,6 +543,10 @@ function frame(now) {
   setTargets(h);
   for (let i = 0; i < N; i++) B[i].t = TS[i].x;
   warp.t = performance.now() - pvt < 60 ? ptrSpeed : 0;
+  infoLag.t = clamp(B[0].x, 0, infoSize * 1.2);
+  infoHv.t = infoOpen && ptr.inside && coord() < B[0].x ? 1 : 0;
+  parX.t = ptr.inside && ptr.type === 'mouse' ? clamp(ptr.x / W * 2 - 1, -1, 1) : 0;
+  parY.t = (ptr.inside && ptr.type === 'mouse' ? clamp(ptr.y / H * 2 - 1, -1, 1) : 0) + (state === 'open' ? clamp(galY / H, 0, 1) * 0.9 : 0);
   const opened = state === 'open' || state === 'opening';
   const scrollP = opened ? clamp(galY / (H * 0.55), 0, 1) : 0;
   anyHover.t = h >= 0 ? 1 : 0;
@@ -537,7 +570,7 @@ function frame(now) {
     const size = end - pos; prev = pos;
     const io = p.intro.x * cross;
     const hv = clamp(p.hv.x, 0, 1), op = clamp(p.op.x, 0, 1);
-    const zoom = 1 + TUNE.zoomHover * hv * (1 - 0.45 * press.x) * (1 - op) + TUNE.zoomOpen * op;
+    const zoom = 1 + TUNE.zoomHover * hv * (1 - 0.45 * press.x) * (1 - op) + TUNE.zoomOpen * op + (GLS && GLS.depth[i] ? GLS.depth[i] * 1.2 * Math.max(hv, op) : 0);
 
     // the elastic photo: its own centre and size chase the frame; the mismatch is squash, stretch and lag
     p.lagC.t = pos + size / 2; p.lagS.t = Math.max(1, size);
@@ -572,11 +605,17 @@ function frame(now) {
     GU.B[N] = L * dpr;
     GU.axisX = axisX; GU.time = now / 1000; GU.any = any; GU.dark = flat.x; GU.blur = reduced ? 0 : clamp((flat.x - 0.16) / 0.56, 0, 1) * 3.4;
     GU.shift = shift.x; GU.press = press.x; GU.warp = 0;
+    GU.info = infoSize; GU.pOff = Math.min(infoSize * 0.2, infoLag.x - infoSize) * 1.25; GU.pIn = clamp(infoLag.x / infoSize * 1.6 - 0.2, 0, 1); GU.pHv = clamp(infoHv.x, 0, 1);
+    GU.pSplit = reduced ? 0 : clamp((B[0].x - infoLag.x) / Math.max(1, infoSize), -0.3, 0.3) * 0.02;
+    GU.pLod = GLS.portraitH ? Math.max(0, Math.log2(GLS.portraitH / (Math.max(axisX ? H * 0.76 : infoSize, (axisX ? infoSize : W * 0.6) / GLS.portraitA) * dpr)) - 0.3) : 0;
+    GU.parX = reduced ? 0 : parX.x; GU.parY = reduced ? 0 : parY.x;
     GU.ptrX = ptr.inside ? ptr.x : W / 2; GU.ptrY = ptr.inside ? ptr.y : H / 2;
     GLS.draw(GU);
   }
 
   const ip = infoP;
+  const off = Math.min(infoSize * 0.2, infoLag.x - infoSize);
+  if (info._off !== off) { info._off = off; info.style.setProperty('--off', off.toFixed(1) + 'px'); }
   if (info._p !== ip) { info._p = ip; info.style.setProperty('--p', ip.toFixed(3)); if (ip < 0.002 && !infoOpen) info.classList.remove('on'); }
 
   LB.tick(now);
@@ -588,14 +627,20 @@ document.body.classList.add('intro');
 measure(true);
 requestAnimationFrame(frame);
 
+if (GLS && SITE.portrait) { const pi = new Image(); pi.src = SITE.portrait.src; (pi.decode ? pi.decode() : Promise.resolve()).then(() => GLS.setPortrait(pi)).catch(() => {});
+  if (SITE.portrait.depth) { const pd = new Image(); pd.src = SITE.portrait.depth; (pd.decode ? pd.decode() : Promise.resolve()).then(() => GLS.setPortraitDepth(pd, SITE.portrait.parallax ?? SITE.parallax ?? TUNE.depth)).catch(() => {}); } }
+
 // Each column enters as soon as its own photograph is decoded (in order, never before its turn),
 // so one heavy file can't hold the whole page hostage.
 panels.forEach((p, i) => {
   (p.img.decode ? p.img.decode().catch(() => {}) : Promise.resolve()).then(() => {
     if (GLS && p.img.naturalWidth) GLS.setImage(i, p.img);
+    if (GLS && cats[i].cover.depth) { const d = new Image(); d.src = cats[i].cover.depth; (d.decode ? d.decode() : Promise.resolve()).then(() => GLS.setDepth(i, d, cats[i].cover.parallax ?? SITE.parallax ?? TUNE.depth)).catch(() => {}); }
     p.ready = true;
     if (!introAt) introAt = performance.now() + 80;
+    loaded++; if (loaderBar) loaderBar.style.transform = `scaleX(${loaded / N})`;
+    document.body.classList.add('loaded');
   });
 });
-setTimeout(() => { panels.forEach(p => { p.ready = true; }); if (!introAt) introAt = performance.now(); }, 5000);
+setTimeout(() => { panels.forEach(p => { p.ready = true; }); if (!introAt) introAt = performance.now(); document.body.classList.add('loaded'); }, 5000);
 })();

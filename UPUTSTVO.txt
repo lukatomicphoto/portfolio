@@ -1,55 +1,244 @@
-LUKATOMIC.COM - KAKO MIJENJAM SAJT
-===================================
+==============================================================================
+  LUKATOMIC.COM  -  UPUTSTVO
+==============================================================================
 
-Sve se radi u ovom folderu. Tri koraka: izmijeni -> PREGLED.bat -> OBJAVI.bat
+  Rad je uvijek isti, tri koraka:
 
-
-1) FOTKE
---------
-photos\sport\  photos\love\  photos\event\  photos\fashion\  photos\experimental\  photos\studio\
-
-- Dodavanje:  ubaci fotku u folder kategorije.
-- Brisanje:   obrisi fajl iz foldera.
-- Redoslijed: po imenu fajla (01.jpg, 02.jpg, 03.jpg ...). Preimenuj da promijenis redoslijed.
-- Naslovna:   fajl koji se zove cover.jpg (ili cover.webp) je fotka kolone i pozadina galerije.
-- Format:     .jpg, .jpeg, .png ili .webp
-- Velicina:   galerija do ~2600 px po duzoj strani, naslovna do ~2560 px. Sajt nista ne kompresuje,
-              prikazuje tacno fajl koji ubacis.
-- Moja fotka u kontakt panelu: photos\portrait.jpg (opciono).
-
-Mreza u galeriji se sama slaze po obliku fotki (uspravne / polozene).
+      1. IZMIJENI   fotke u photos\  ili tekst u content.json
+      2. PREGLED    dupli klik na PREGLED.bat   (samo na ovom racunaru)
+      3. OBJAVA     dupli klik na OBJAVI.bat    (ide na lukatomic.com)
 
 
-2) TEKSTOVI  ->  content.json  (otvori u Notepad-u)
----------------------------------------------------
-- "about"      kratak tekst o meni
-- "role"       podnaslov (Commercial photographer)
-- "email", "instagram", "phone", "location"   prazno "" = ne prikazuje se
-- "clients"    lista klijenata
-- "categories" naziv ("title") i redoslijed kolona.
-               "slug" je ime foldera i adresa (lukatomic.com/#sport) - ne mijenjaj ga bez potrebe.
-               "focus" (0 do 1) bira koji dio naslovne fotke se vidi u uskoj koloni:
-               0 = lijeva ivica, 0.5 = sredina, 1 = desna ivica.
+------------------------------------------------------------------------------
+  STA JE STA U OVOM FOLDERU
+------------------------------------------------------------------------------
 
-Pazi na navodnike i zareze - ako nesto pokvaris, PREGLED.bat ce prijaviti gresku.
+  TVOJE - ovo mijenjas:
+      photos\          sve fotografije, po kategorijama
+      content.json     svi tekstovi, kontakt, redoslijed kategorija, SEO
+      logo.svg         logo (gore lijevo, loading ekran, ikonica u tabu)
+      PREGLED.bat      pogledaj lokalno
+      OBJAVI.bat       objavi na internet
+      UPUTSTVO.txt     ovaj fajl
 
+  KOD - ne diras, osim ako mijenjas izgled ili ponasanje sajta:
+      sistem\build.py        pravi sajt iz tvojih fotki i tekstova
+      sistem\template.html   kostur svake stranice
+      sistem\css\style.css   izgled
+      sistem\js\app.js       fizika, kolone, galerija, fullscreen
+      sistem\js\gl.js        WebGL efekti (shader)
 
-3) LOGO  ->  logo.svg   (zamijeni fajl svojim, isto ime)
+  PRAVI SE SAMO - nikad ne diraj rukom, svaki PREGLED/OBJAVA ih pregazi:
+      index.html  data.js  sitemap.xml  robots.txt
+      thumbs\                          lagane verzije fotki
+      sport\ love\ event\ fashion\ experimental\ studio\
+                                       stranice kategorija (NISU fotke -
+                                       fotke su u photos\sport\ itd.)
 
-
-4) PREGLED  ->  dupli klik na PREGLED.bat
------------------------------------------
-Otvara sajt samo na ovom racunaru. Nista ne ide na internet. Zatvori crni prozor kad zavrsis.
-(Sajt ne radi ispravno ako samo otvoris index.html duplim klikom - koristi PREGLED.bat.)
-
-
-5) OBJAVA  ->  dupli klik na OBJAVI.bat
----------------------------------------
-Pokaze spisak izmjena, pita "Objaviti? (d/n)". Na "d" salje sve na GitHub,
-a Netlify za oko minut azurira lukatomic.com.
-
-Ako nesto podje po zlu na zivom sajtu: app.netlify.com -> lukatomic.com -> Deploys ->
-klikni prethodnu verziju -> "Publish deploy". Sajt se odmah vraca na staro.
+  Skriveni folder .git je veza sa GitHub-om. Ne dirati.
 
 
-NE DIRATI: data.js (pravi se sam), folderi css\ i js\, build.py, skriveni folder .git
+------------------------------------------------------------------------------
+  1. FOTKE U GALERIJI
+------------------------------------------------------------------------------
+
+  Folder:   photos\<kategorija>\      npr. photos\fashion\
+
+  Dodaj     ubaci fajl u folder
+  Obrisi    obrisi fajl iz foldera
+  Poredaj   po imenu fajla: 01.jpg, 02.jpg, 03.jpg ...
+  Format    .jpg  .jpeg  .png  .webp
+  Velicina  izvezi veliko i kvalitetno (2600-3000 px po duzoj strani).
+            Sajt sam pravi lagane verzije za mrezu, a u fullscreenu
+            prikazuje tvoj original, bez ikakve dodatne kompresije.
+
+  Mreza se sama slaze po obliku fotki (uspravne / polozene). Nema
+  podesavanja - redoslijed fajlova je redoslijed u mrezi.
+
+  OPIS ZA GOOGLE = IME FAJLA
+      03-nike-air-max-campaign.jpg
+          -> "Nike air max campaign - Fashion photography by Luka Tomic"
+      03.jpg
+          -> "Fashion photography by Luka Tomic"
+  Broj na pocetku je redoslijed, ostatak (engleski, sa crticama) je opis.
+  Na sajtu se ne vidi, Google ga cita. Pisi sta je stvarno na fotki:
+  brend, kampanja, sta se desava.
+
+  Zamjena fotke pod istim imenom radi normalno - sajt sam prepozna da je
+  fajl nov i nece prikazati staru verziju iz kesa.
+
+
+------------------------------------------------------------------------------
+  2. NASLOVNA FOTKA KOLONE
+------------------------------------------------------------------------------
+
+  Fajl:     photos\<kategorija>\cover.jpg     (ili cover.webp / cover.png)
+
+  To je fotka kolone na pocetnoj i pozadina kad se galerija otvori.
+  Velicina: oko 2500 px po duzoj strani. Polozena fotka najbolje pokriva
+  cijeli ekran; uspravna radi, ali se na sirokom ekranu jace kropuje.
+
+  KOJI DIO SE VIDI U USKOJ KOLONI
+  U content.json, kod te kategorije, polje "focus":
+      0    lijeva ivica fotke
+      0.5  sredina
+      1    desna ivica
+  Npr. ako je lice desno od sredine, stavi 0.7.
+
+
+------------------------------------------------------------------------------
+  3. DUBINSKI PARALLAX (depth mapa)
+------------------------------------------------------------------------------
+
+  Naslovna fotka dobije 3D osjecaj: dok pomjeras mis, blizi dijelovi se
+  pomjeraju vise od daljih. Radi na hover i u otvorenoj galeriji.
+
+  KAKO UKLJUCITI
+      Stavi depth mapu pored naslovne, pod imenom:
+          photos\<kategorija>\cover-depth.jpg
+      Nema je -> nema efekta. Obrises je -> efekat nestaje. Nista drugo
+      ne treba podesavati.
+
+  KAKVA TREBA BITI MAPA
+      - crno-bijela slika:  BIJELO = BLIZU,  CRNO = DALEKO
+      - isti odnos stranica kao cover.jpg (isti kadar, bez kropovanja)
+      - ne mora biti velika: 1500 px je vise nego dovoljno
+      - glatki prelazi daju ljepsi rezultat od ostrih ivica;
+        sajt je i sam malo zamuti da se fotka ne "cijepa"
+
+  JACINA
+      content.json, na vrhu:   "parallax": 0.028      vazi za sve
+      Za jednu kategoriju dodaj joj isto polje:
+          {"slug": "experimental", "title": "Experimental", "focus": 0.5, "parallax": 0.04}
+      0.02 = jedva primjetno,  0.03 = prirodno,  0.05+ = jako, figure se
+      pocinju razvlaciti na ivicama. Ako vidis "gumu", smanji.
+
+  PORTRET U KONTAKT KOLONI
+      Isto pravilo:  photos\portrait-depth.jpg  pored  photos\portrait.jpg
+
+  Primjer koji vec radi: photos\experimental\cover.jpg + cover-depth.jpg
+
+  Napomena: parallax postoji za naslovne fotke i portret. Fotke u mrezi
+  galerije ga nemaju.
+
+
+------------------------------------------------------------------------------
+  4. TEKSTUALNA PLOCICA U GALERIJI
+------------------------------------------------------------------------------
+
+  Podnaslov koji zauzima jedno mjesto u mrezi (na telefonu cijeli red).
+  Sluzi da razdvojis fotkanja, a Google ga cita kao pravi podnaslov.
+
+  Napravi .txt fajl u folderu kategorije (Notepad -> Save as):
+      prvi red   = naslov (veliki)
+      ostalo     = sitan tekst ispod (opciono)
+
+  Mjesto u mrezi odredjuje ime fajla:
+      00.txt     na samom pocetku
+      07z.txt    poslije 07.jpg, a prije 08.jpg
+
+  Primjer: photos\sport\00.txt  i  photos\sport\07z.txt
+  Obrises fajl -> plocica nestaje.
+
+
+------------------------------------------------------------------------------
+  5. KONTAKT KOLONA
+------------------------------------------------------------------------------
+
+  Otvara se kad mis dodje na logo ili na lijevu ivicu ekrana.
+
+  Portret:  photos\portrait.jpg
+            Tamna pozadina na fotki se sama stapa sa pozadinom sajta,
+            a donja ivica se gubi u tekst. Najbolje radi uspravna fotka
+            sa tamnom pozadinom i glavom u gornjoj trecini.
+
+  Tekst:    content.json
+      "about"       kratak tekst o meni
+      "role"        podnaslov
+      "email"  "instagram"  "phone"  "location"
+                    prazno "" = taj red se ne prikazuje
+      "clients"     lista klijenata
+
+
+------------------------------------------------------------------------------
+  6. KATEGORIJE
+------------------------------------------------------------------------------
+
+  content.json -> "categories". Redoslijed u listi = redoslijed kolona.
+
+      "title"     naziv koji se vidi
+      "slug"      ime foldera u photos\ i adresa (lukatomic.com/sport/)
+                  Ne mijenjaj bez potrebe - mijenja adresu stranice.
+                  Ako ga promijenis, preimenuj i folder u photos\ i obrisi
+                  stari folder stranice iz korijena (npr. sport\).
+      "focus"     vidi poglavlje 2
+      "parallax"  vidi poglavlje 3 (opciono)
+
+  Sajt je napravljen za tacno sest kategorija.
+
+
+------------------------------------------------------------------------------
+  7. GOOGLE (SEO)
+------------------------------------------------------------------------------
+
+  content.json -> "seo". Ovo se NE vidi na sajtu; vidi se u Google
+  rezultatima i kad neko podijeli link.
+
+      "experienceSince"       godina od koje racunam iskustvo
+      "title"                 naslov pocetne stranice
+      "description"           opis pocetne stranice
+      "categoryTitle"         sablon naslova za stranice kategorija
+      "categoryDescription"   sablon opisa za stranice kategorija
+
+  U tekstu mozes pisati:  {name}  {role}  {years}  {category}
+  {years} se sam racuna iz "experienceSince", pa nikad ne zastari.
+
+  Sta jos pomaze, redom po vaznosti:
+      1. upisi "location" (grad, drzava) u content.json
+      2. opisna imena fajlova sa brendovima (poglavlje 1)
+      3. tekstualne plocice sa nazivima kampanja (poglavlje 4)
+      4. Google Search Console: prijavi lukatomic.com i posalji
+         adresu  lukatomic.com/sitemap.xml
+
+
+------------------------------------------------------------------------------
+  8. PREGLED I OBJAVA
+------------------------------------------------------------------------------
+
+  PREGLED.bat
+      Napravi sajt i otvori ga na http://localhost:8123
+      Nista ne ide na internet. Zatvori crni prozor kad zavrsis.
+      Poslije svake izmjene: zatvori prozor i pokreni PREGLED.bat ponovo.
+      (Dupli klik na index.html NE radi - uvijek koristi PREGLED.bat.)
+
+  OBJAVI.bat
+      Napravi sajt, pokaze spisak izmjena i pita "Objaviti? (d/n)".
+      Na "d" salje sve na GitHub; Netlify za oko minut azurira sajt.
+      Na "n" se nista ne desava.
+
+  Ako content.json ima gresku (fali navodnik ili zarez), oba ce stati i
+  ispisati gresku umjesto da pokvare sajt.
+
+
+------------------------------------------------------------------------------
+  9. AKO NESTO KRENE PO ZLU
+------------------------------------------------------------------------------
+
+  Zivi sajt je pokvaren poslije objave
+      app.netlify.com -> lukatomic.com -> Deploys -> klikni prethodnu
+      verziju -> "Publish deploy". Sajt se odmah vraca na staro.
+
+  Vidim staru fotku
+      Zatvori i ponovo pokreni PREGLED.bat, pa osvjezi sa Ctrl+F5.
+
+  PREGLED.bat javlja gresku u content.json
+      Najcesce fali zarez izmedju redova ili navodnik. Zadnji red u
+      svakoj listi NEMA zarez na kraju.
+
+  OBJAVI.bat javlja da slanje nije uspjelo
+      Provjeri internet i pokreni ponovo. Ako trazi prijavu, prijavi se
+      na GitHub nalog lukatomicphoto.
+
+  Fotka se ne pojavljuje u galeriji
+      Provjeri format (.jpg .jpeg .png .webp) i da je u pravom folderu
+      photos\<kategorija>\, a ne u folderu stranice u korijenu.

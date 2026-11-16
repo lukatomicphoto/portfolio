@@ -3,16 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Luka Tomić — Photographer</title>
-<meta name="description" content="Luka Tomić — commercial photographer. Sport, love, event, fashion, experimental and studio work.">
+<base href="/">
+<title>Luka Tomić — Commercial Photographer for International Brands</title>
+<meta name="description" content="Luka Tomić is a commercial photographer with 15+ years of professional experience, shooting sport, fashion, event and studio campaigns for international brands.">
+<meta name="author" content="Luka Tomić">
+<link rel="canonical" href="https://lukatomic.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Luka Tomić">
+<meta property="og:title" content="Luka Tomić — Commercial Photographer for International Brands">
+<meta property="og:description" content="Luka Tomić is a commercial photographer with 15+ years of professional experience, shooting sport, fashion, event and studio campaigns for international brands.">
+<meta property="og:url" content="https://lukatomic.com/">
+<meta property="og:image" content="https://lukatomic.com/photos/sport/cover.jpg">
+<meta property="og:image:alt" content="Sport photography by Luka Tomić — commercial photographer">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Luka Tomić — Commercial Photographer for International Brands">
+<meta name="twitter:description" content="Luka Tomić is a commercial photographer with 15+ years of professional experience, shooting sport, fashion, event and studio campaigns for international brands.">
+<meta name="twitter:image" content="https://lukatomic.com/photos/sport/cover.jpg">
 <meta name="theme-color" content="#0a0a0b">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a0b'/%3E%3Cg fill='%23efeae2'%3E%3Crect x='5' y='6' width='3' height='20'/%3E%3Crect x='10' y='6' width='5' height='20'/%3E%3Crect x='17' y='6' width='2' height='20'/%3E%3Crect x='21' y='6' width='6' height='20'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,100..900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="sistem/css/style.css?v=2611162343">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "WebSite", "@id": "https://lukatomic.com/#website", "url": "https://lukatomic.com/", "name": "Luka Tomić", "inLanguage": "en", "publisher": {"@id": "https://lukatomic.com/#person"}}, {"@type": "Person", "@id": "https://lukatomic.com/#person", "name": "Luka Tomić", "url": "https://lukatomic.com/", "jobTitle": "Commercial photographer", "description": "Luka Tomić is a commercial photographer with 15+ years of professional experience, shooting sport, fashion, event and studio campaigns for international brands.", "knowsAbout": ["Commercial photography", "Advertising photography", "Sport photography", "Love photography", "Event photography", "Fashion photography", "Experimental photography", "Studio photography"], "hasOccupation": {"@type": "Occupation", "name": "Commercial photographer", "skills": "Sport photography, Love photography, Event photography, Fashion photography, Experimental photography, Studio photography"}, "image": "https://lukatomic.com/photos/portrait.jpg", "email": "mailto:lukatomicphoto@gmail.com", "telephone": "+387 63 676 516", "sameAs": ["https://www.instagram.com/lukinprofil"], "address": {"@type": "PostalAddress", "addressLocality": "Banja Luka, Bosnia and Herzegovina"}}]}</script>
 </head>
 <body>
+
+<div class="loader" aria-hidden="true"><img src="logo.svg" alt="" width="46" height="46"><i></i></div>
 
 <canvas class="gl" id="gl" aria-hidden="true"></canvas>
 
@@ -27,9 +44,11 @@
   <button class="gal-next" id="galNext" type="button"></button>
 </div>
 
-<button class="mark" id="mark" type="button" aria-expanded="false" aria-controls="info">
-  <img class="mark-logo" src="logo.svg" alt="Luka Tomić — about and contact" width="38" height="38" draggable="false"><span class="mark-hint" aria-hidden="true">Contact</span>
-</button>
+<h1 class="mark-wrap">
+  <button class="mark" id="mark" type="button" aria-expanded="false" aria-controls="info">
+    <img class="mark-logo" src="logo.svg" alt="Luka Tomić — Commercial photographer" width="38" height="38" draggable="false"><span class="mark-hint" aria-hidden="true">Contact</span>
+  </button>
+</h1>
 <button class="back" id="back" type="button" aria-label="Back to all categories"><i aria-hidden="true"></i></button>
 
 <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photograph viewer">
@@ -42,10 +61,12 @@
   <button class="lb-close" id="lbClose" type="button" aria-label="Close"></button>
 </div>
 
-<noscript><p style="color:#efeae2;padding:2rem;font-family:monospace">This portfolio needs JavaScript.</p></noscript>
+<noscript>
+<h1>Luka Tomić — Commercial photographer</h1><p>Luka Tomić is a commercial photographer with 15+ years of professional experience, shooting sport, fashion, event and studio campaigns for international brands.</p><ul><li><a href="/sport/">Sport photography</a></li><li><a href="/love/">Love photography</a></li><li><a href="/event/">Event photography</a></li><li><a href="/fashion/">Fashion photography</a></li><li><a href="/experimental/">Experimental photography</a></li><li><a href="/studio/">Studio photography</a></li></ul>
+</noscript>
 
-<script src="data.js"></script>
-<script src="js/gl.js"></script>
-<script src="js/app.js"></script>
+<script src="data.js?v=2611162343"></script>
+<script src="sistem/js/gl.js?v=2611162343"></script>
+<script src="sistem/js/app.js?v=2611162343"></script>
 </body>
 </html>
