@@ -218,19 +218,42 @@ function currentSlug() {
   if (h && cats.some(c => c.slug === h)) return h;
   return PATHS ? decodeURIComponent(location.pathname.split('/').filter(Boolean)[0] || '') : '';
 }
-function route() {
+// Put everything where it is headed, with no motion left to play.
+function settle() {
+  setTargets(-1);
+  TS.forEach((s, i) => { s.snap(s.t); B[i].snap(s.t); });
+  panels.forEach((p, i) => {
+    const e = i < N - 1 ? B[i + 1].x : L;
+    p.op.snap(i === active ? 1 : 0); p.hv.snap(0);
+    p.lagC.snap((B[i].x + e) / 2); p.lagS.snap(Math.max(1, e - B[i].x));
+  });
+  anyHover.snap(0); shift.snap(0); flat.snap(active >= 0 ? 0.16 : 0); infoLag.snap(0);
+  gal.style.transition = 'none';
+  requestAnimationFrame(() => requestAnimationFrame(() => { gal.style.transition = ''; }));
+}
+function route(instant) {
   const slug = currentSlug();
   const i = cats.findIndex(c => c.slug === slug);
   if (PATHS && location.hash && i >= 0) history.replaceState(null, '', `/${slug}/`); // old #sport links keep working
   document.title = i >= 0 ? cats[i].pageTitle || `${cats[i].title} — ${SITE.name}` : SITE.pageTitle || document.title;
   if (i >= 0) openCat(i); else closeCat();
+  if (instant === true && state !== 'intro') {
+    if (i >= 0) {
+      if (pendingBuild >= 0 || built !== i) { buildGallery(i); pendingBuild = -1; }
+      state = 'open'; gal.classList.add('on'); gal.inert = false;
+      cells.forEach(c => { c.node.style.transition = 'none'; c.node.classList.add('in'); });
+      requestAnimationFrame(() => requestAnimationFrame(() => cells.forEach(c => { c.node.style.transition = ''; })));
+    } else { active = -1; state = 'home'; built = -1; }
+    settle();
+  }
 }
 function go(slug) {
   if (slug !== currentSlug()) history.pushState(null, '', PATHS ? (slug ? `/${slug}/` : '/') : (slug ? '#' + slug : location.pathname + location.search));
   route();
 }
-addEventListener('popstate', route);
-addEventListener('hashchange', route);
+const coarse = matchMedia('(pointer: coarse)');
+addEventListener('popstate', () => route(coarse.matches));   // swipe / system back on a phone: no replayed animation
+addEventListener('hashchange', () => route());
 
 function setInfo(v) {
   if (v === infoOpen) return;

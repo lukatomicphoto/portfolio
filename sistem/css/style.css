@@ -260,3 +260,9 @@ body.loaded .loader { opacity: 0; visibility: hidden; }
 .ph-text p { margin-top: 12px; font: 500 10px/1.6 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--mute); max-width: 26ch; }
 html.rows .ph-text { padding: 12px 0 10px; }
 html.rows .ph-text p { max-width: none; }
+
+/* ───────── Contact column on phones: description beside the portrait, details at the bottom ───────── */
+html.rows .info { justify-content: flex-start; padding-top: 78px; }
+html.rows .info .role { max-width: 46%; }
+html.rows .info .about { max-width: 47%; font-size: clamp(15px, 4.3vw, 19px); line-height: 1.24; }
+html.rows .info dl { margin-top: auto; }
