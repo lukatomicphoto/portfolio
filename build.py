@@ -136,7 +136,7 @@ def main():
         if x.lower().startswith("portrait") and x.lower().endswith(EXTS):
             site["portrait"] = entry(os.path.join("photos", x))
 
-    with open(os.path.join(ROOT, "data.js"), "w", encoding="utf-8") as f:
+    with open(os.path.join(ROOT, "data.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// Generisano preko build.py - ne mijenjati rucno.\nwindow.SITE = ")
         json.dump(site, f, ensure_ascii=False, indent=1)
         f.write(";\n")

@@ -1,0 +1,55 @@
+LUKATOMIC.COM - KAKO MIJENJAM SAJT
+===================================
+
+Sve se radi u ovom folderu. Tri koraka: izmijeni -> PREGLED.bat -> OBJAVI.bat
+
+
+1) FOTKE
+--------
+photos\sport\  photos\love\  photos\event\  photos\fashion\  photos\experimental\  photos\studio\
+
+- Dodavanje:  ubaci fotku u folder kategorije.
+- Brisanje:   obrisi fajl iz foldera.
+- Redoslijed: po imenu fajla (01.jpg, 02.jpg, 03.jpg ...). Preimenuj da promijenis redoslijed.
+- Naslovna:   fajl koji se zove cover.jpg (ili cover.webp) je fotka kolone i pozadina galerije.
+- Format:     .jpg, .jpeg, .png ili .webp
+- Velicina:   galerija do ~2600 px po duzoj strani, naslovna do ~2560 px. Sajt nista ne kompresuje,
+              prikazuje tacno fajl koji ubacis.
+- Moja fotka u kontakt panelu: photos\portrait.jpg (opciono).
+
+Mreza u galeriji se sama slaze po obliku fotki (uspravne / polozene).
+
+
+2) TEKSTOVI  ->  content.json  (otvori u Notepad-u)
+---------------------------------------------------
+- "about"      kratak tekst o meni
+- "role"       podnaslov (Commercial photographer)
+- "email", "instagram", "phone", "location"   prazno "" = ne prikazuje se
+- "clients"    lista klijenata
+- "categories" naziv ("title") i redoslijed kolona.
+               "slug" je ime foldera i adresa (lukatomic.com/#sport) - ne mijenjaj ga bez potrebe.
+               "focus" (0 do 1) bira koji dio naslovne fotke se vidi u uskoj koloni:
+               0 = lijeva ivica, 0.5 = sredina, 1 = desna ivica.
+
+Pazi na navodnike i zareze - ako nesto pokvaris, PREGLED.bat ce prijaviti gresku.
+
+
+3) LOGO  ->  logo.svg   (zamijeni fajl svojim, isto ime)
+
+
+4) PREGLED  ->  dupli klik na PREGLED.bat
+-----------------------------------------
+Otvara sajt samo na ovom racunaru. Nista ne ide na internet. Zatvori crni prozor kad zavrsis.
+(Sajt ne radi ispravno ako samo otvoris index.html duplim klikom - koristi PREGLED.bat.)
+
+
+5) OBJAVA  ->  dupli klik na OBJAVI.bat
+---------------------------------------
+Pokaze spisak izmjena, pita "Objaviti? (d/n)". Na "d" salje sve na GitHub,
+a Netlify za oko minut azurira lukatomic.com.
+
+Ako nesto podje po zlu na zivom sajtu: app.netlify.com -> lukatomic.com -> Deploys ->
+klikni prethodnu verziju -> "Publish deploy". Sajt se odmah vraca na staro.
+
+
+NE DIRATI: data.js (pravi se sam), folderi css\ i js\, build.py, skriveni folder .git
