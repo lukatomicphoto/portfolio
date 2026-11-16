@@ -1,0 +1,18 @@
+{
+  "name": "Luka Tomić",
+  "role": "Commercial photographer",
+  "about": "I build images around light, colour and movement — for brands, athletes, stages and studios. Six bodies of work, one way of seeing.",
+  "email": "lukatomicphoto@gmail.com",
+  "instagram": "",
+  "phone": "",
+  "location": "",
+  "clients": ["Nike", "Under Armour", "New Moment", "Buzz", "The Master Craft Brewery", "Groove", "Kvantum Sport"],
+  "categories": [
+    {"slug": "sport",        "title": "Sport",        "focus": 0.5},
+    {"slug": "love",         "title": "Love",         "focus": 0.5},
+    {"slug": "event",        "title": "Event",        "focus": 0.5},
+    {"slug": "fashion",      "title": "Fashion",      "focus": 0.5},
+    {"slug": "experimental", "title": "Experimental", "focus": 0.74},
+    {"slug": "studio",       "title": "Studio",       "focus": 0.5}
+  ]
+}
